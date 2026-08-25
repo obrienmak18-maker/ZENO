@@ -38,7 +38,11 @@ Le fichier `vercel.json` contient déjà les valeurs de build et de sortie. Si V
 
 ## Sécurité et séparation
 
-Ce dépôt ne contient aucune clé secrète, aucun token Idealy et aucune configuration Netlify. Les données scolaires réelles ne doivent pas être placées dans le frontend. Avant une utilisation en production, connecter la migration Supabase via un backend sécurisé, activer les politiques RLS et définir les variables d’environnement dans le projet Vercel Zeno uniquement.
+Ce dépôt ne contient aucune clé secrète, aucun token Idealy et aucune configuration Netlify. Les données scolaires réelles ne doivent pas être placées dans le frontend. La base Supabase doit être une base dédiée à Zeno, distincte de toute base Idealy.
+
+Appliquez les migrations dans l’ordre : `supabase/migrations/20260825000000_zeno_core.sql`, puis `supabase/migrations/20260825000001_zeno_bootstrap.sql`. La première crée les entités tenant-scoped et les politiques RLS ; la seconde expose uniquement la fonction authentifiée `zeno_bootstrap_school` pour créer l’établissement initial, l’année active, le membre propriétaire, les rôles et l’événement d’audit.
+
+Copiez `.env.example` vers `.env.local` pour le développement local, puis configurez les mêmes valeurs dans les variables du projet Vercel Zeno uniquement : `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`. La clé anonyme est destinée au frontend ; aucune clé service-role ne doit être ajoutée au dépôt ou à Vercel côté navigateur. Si ces variables sont absentes, Zeno affiche ses parcours en mode local de démonstration sans prétendre synchroniser les données.
 
 La migration prépare l’isolation par établissement, les rôles, les inscriptions, les affectations, le planning, les présences, les notes, les frais, les factures, les paiements et le journal d’audit. Elle ne doit être appliquée qu’à la base Supabase dédiée à Zeno.
 

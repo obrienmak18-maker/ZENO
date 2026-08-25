@@ -36,6 +36,10 @@ import {
   X,
 } from 'lucide-react';
 import './styles.css';
+import AuthScreen from './AuthScreen';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
+import { bootstrapSchool, createSchoolStudent, fetchMySchool, writeActivity } from './lib/zenoApi';
+import { readStored, writeStored } from './lib/storage';
 
 type Role = 'directeur' | 'enseignant' | 'secretaire' | 'comptable';
 type View = 'dashboard' | 'students' | 'staff' | 'classes' | 'attendance' | 'grades' | 'bulletins' | 'timetable' | 'finance' | 'reports' | 'administration' | 'notifications' | 'activity' | 'settings';
@@ -95,39 +99,48 @@ const defaultPayments: Payment[] = [
 ];
 
 function App() {
+  const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
+  const [authUser, setAuthUser] = useState<{ id: string } | null>(null);
+  const [localDemo, setLocalDemo] = useState(() => localStorage.getItem('zeno-local-demo') === 'true');
+  const [activeSchoolId, setActiveSchoolId] = useState<string | null>(() => localStorage.getItem('zeno-school-id'));
   const [role, setRole] = useState<Role>(() => (localStorage.getItem('zeno-role') as Role) || 'directeur');
   const [view, setView] = useState<View>('dashboard');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => new URLSearchParams(window.location.search).get('onboarding') === '1');
-  const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(() => {
-    const saved = localStorage.getItem('zeno-school-config');
-    return saved ? JSON.parse(saved) as SchoolConfig : defaultSchoolConfig;
-  });
-  const [grades, setGrades] = useState<GradeRow[]>(() => {
-    const saved = localStorage.getItem('zeno-grades');
-    return saved ? JSON.parse(saved) as GradeRow[] : defaultGrades;
-  });
-  const [payments, setPayments] = useState<Payment[]>(() => {
-    const saved = localStorage.getItem('zeno-payments');
-    return saved ? JSON.parse(saved) as Payment[] : defaultPayments;
-  });
-  const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('zeno-students');
-    return saved ? JSON.parse(saved) as Student[] : initialStudents;
-  });
+  const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(() => readStored('zeno-school-config', defaultSchoolConfig));
+  const [grades, setGrades] = useState<GradeRow[]>(() => readStored('zeno-grades', defaultGrades));
+  const [payments, setPayments] = useState<Payment[]>(() => readStored('zeno-payments', defaultPayments));
+  const [students, setStudents] = useState<Student[]>(() => readStored('zeno-students', initialStudents));
   const [toast, setToast] = useState<string | null>(null);
-  const [attendance, setAttendance] = useState<Record<number, AttendanceStatus>>(() => {
-    const saved = localStorage.getItem('zeno-attendance');
-    return saved ? JSON.parse(saved) as Record<number, AttendanceStatus> : Object.fromEntries(attendanceRoster.map((student) => [student.id, 'present'])) as Record<number, AttendanceStatus>;
-  });
+  const [attendance, setAttendance] = useState<Record<number, AttendanceStatus>>(() => readStored('zeno-attendance', Object.fromEntries(attendanceRoster.map((student) => [student.id, 'present'])) as Record<number, AttendanceStatus>));
   const [attendanceSaved, setAttendanceSaved] = useState(false);
 
-  useEffect(() => { localStorage.setItem('zeno-role', role); }, [role]);
-  useEffect(() => { localStorage.setItem('zeno-school-config', JSON.stringify(schoolConfig)); }, [schoolConfig]);
-  useEffect(() => { localStorage.setItem('zeno-grades', JSON.stringify(grades)); }, [grades]);
-  useEffect(() => { localStorage.setItem('zeno-payments', JSON.stringify(payments)); }, [payments]);
-  useEffect(() => { localStorage.setItem('zeno-attendance', JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem('zeno-students', JSON.stringify(students)); }, [students]);
+  useEffect(() => {
+    if (!supabase) { setAuthLoading(false); return; }
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => { if (mounted) { setAuthUser(data.session?.user ? { id: data.session.user.id } : null); setAuthLoading(false); } });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setAuthUser(session?.user ? { id: session.user.id } : null));
+    return () => { mounted = false; listener.subscription.unsubscribe(); };
+  }, []);
+  useEffect(() => {
+    if (!supabase || !authUser) return;
+    void fetchMySchool().then(({ data }) => {
+      const membership = data as { school_id?: string; role_key?: string; zeno_schools?: { id?: string; name?: string; province?: string; city?: string; address?: string; contact_phone?: string } | null } | null;
+      if (!membership?.school_id) return;
+      setActiveSchoolId(membership.school_id); localStorage.setItem('zeno-school-id', membership.school_id);
+      const school = membership.zeno_schools;
+      if (school?.name) setSchoolConfig((current) => ({ ...current, name: school.name ?? current.name, province: school.province ?? current.province, city: school.city ?? current.city, address: school.address ?? current.address, phone: school.contact_phone ?? current.phone, configured: true }));
+      const roleMap: Record<string, Role> = { directeur: 'directeur', enseignant: 'enseignant', secretaire: 'secretaire', comptable: 'comptable' };
+      if (membership.role_key && roleMap[membership.role_key]) setRole(roleMap[membership.role_key]);
+    });
+  }, [authUser]);
+  useEffect(() => { writeStored('zeno-local-demo', localDemo); }, [localDemo]);
+  useEffect(() => { writeStored('zeno-role', role); }, [role]);
+  useEffect(() => { writeStored('zeno-school-config', schoolConfig); }, [schoolConfig]);
+  useEffect(() => { writeStored('zeno-grades', grades); }, [grades]);
+  useEffect(() => { writeStored('zeno-payments', payments); }, [payments]);
+  useEffect(() => { writeStored('zeno-attendance', attendance); }, [attendance]);
+  useEffect(() => { writeStored('zeno-students', students); }, [students]);
   useEffect(() => {
     const handleToast = (event: Event) => setToast((event as CustomEvent<string>).detail);
     window.addEventListener('zeno-toast', handleToast);
@@ -145,8 +158,16 @@ function App() {
 
   const addStudent = (name: string, className: string) => {
     const initials = name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
-    setStudents((current) => [...current, { id: Date.now(), initials, name, className, attendance: 100, balance: 'À jour', status: 'Actif' }]);
+    const localId = Date.now();
+    setStudents((current) => [...current, { id: localId, initials, name, className, attendance: 100, balance: 'À jour', status: 'Actif' }]);
     setToast(`${name} a été ajouté à la liste des élèves.`);
+    if (supabase && authUser && activeSchoolId) {
+      const [firstName, ...lastParts] = name.trim().split(/\s+/);
+      void createSchoolStudent({ schoolId: activeSchoolId, firstName, lastName: lastParts.join(' ') || firstName }).then(({ error }) => {
+        if (error) setToast(`${name} est enregistré localement, mais la synchronisation a échoué.`);
+        else void writeActivity({ schoolId: activeSchoolId, action: 'student.created', entityType: 'student', metadata: { name, className } });
+      });
+    }
   };
   const importStudents = (file: File) => {
     const reader = new FileReader();
@@ -168,15 +189,30 @@ function App() {
     setAttendanceSaved(true);
     setToast('Appel enregistré. Les statistiques de la classe sont à jour.');
   };
+  const completeOnboarding = (config: SchoolConfig) => {
+    setSchoolConfig({ ...config, configured: true });
+    setShowOnboarding(false);
+    setToast('Votre école est prête. Bienvenue dans Zeno.');
+    if (supabase && authUser) {
+      void bootstrapSchool(config).then(({ data, error }) => {
+        const created = Array.isArray(data) ? data[0] : data;
+        if (created?.school_id) { setActiveSchoolId(created.school_id); localStorage.setItem('zeno-school-id', created.school_id); }
+        if (error) setToast(`Configuration locale enregistrée. Synchronisation distante en attente : ${error.message}`);
+        else setToast('Votre école est prête et synchronisée avec Supabase.');
+      });
+    }
+  };
 
-  if (showOnboarding) return <Onboarding initial={schoolConfig} onComplete={(config) => { setSchoolConfig({ ...config, configured: true }); setShowOnboarding(false); setToast('Votre école est prête. Bienvenue dans Zeno.'); }} onCancel={() => setShowOnboarding(false)} />;
+  if (authLoading) return <LoadingScreen />;
+  if (isSupabaseConfigured && !authUser && !localDemo) return <AuthScreen onLocalDemo={() => setLocalDemo(true)} />;
+  if (showOnboarding) return <Onboarding initial={schoolConfig} onComplete={completeOnboarding} onCancel={() => setShowOnboarding(false)} />;
 
   return (
     <div className="zeno-app">
       <button className={`mobile-overlay ${mobileNavOpen ? 'is-open' : ''}`} onClick={() => setMobileNavOpen(false)} aria-label="Fermer la navigation" />
       <Sidebar role={role} view={view} items={visibleNav} open={mobileNavOpen} onNavigate={navigate} onClose={() => setMobileNavOpen(false)} />
       <main className="main-shell">
-        <Topbar role={role} onMenu={() => setMobileNavOpen(true)} onSearch={() => navigate('students')} onRoleChange={(nextRole) => { setRole(nextRole); navigate('dashboard'); }} />
+        <Topbar role={role} onMenu={() => setMobileNavOpen(true)} onSearch={() => navigate('students')} onRoleChange={(nextRole) => { setRole(nextRole); navigate('dashboard'); }} onSignOut={() => { if (supabase) void supabase.auth.signOut(); setAuthUser(null); setLocalDemo(false); localStorage.removeItem('zeno-local-demo'); }} />
         <div className="page-wrap">
           {view === 'dashboard' && <Dashboard role={role} onNavigate={navigate} studentsCount={totalStudentCount} />}
           {view === 'students' && <StudentsPage students={students} role={role} totalStudentCount={totalStudentCount} onAdd={addStudent} onImport={importStudents} onToast={setToast} />}
@@ -199,6 +235,8 @@ function App() {
   );
 }
 
+function LoadingScreen() { return <main className="auth-loading"><div className="brand-mark">Z</div><h1>Ouverture de votre espace Zeno…</h1><p>Vérification de votre session sécurisée.</p></main>; }
+
 function Sidebar({ role, view, items, open, onNavigate, onClose }: { role: Role; view: View; items: NavItem[]; open: boolean; onNavigate: (view: View) => void; onClose: () => void }) {
   return (
     <aside className={`sidebar ${open ? 'is-open' : ''}`}>
@@ -212,9 +250,9 @@ function Sidebar({ role, view, items, open, onNavigate, onClose }: { role: Role;
   );
 }
 
-function Topbar({ role, onMenu, onSearch, onRoleChange }: { role: Role; onMenu: () => void; onSearch: () => void; onRoleChange: (role: Role) => void }) {
+function Topbar({ role, onMenu, onSearch, onRoleChange, onSignOut }: { role: Role; onMenu: () => void; onSearch: () => void; onRoleChange: (role: Role) => void; onSignOut: () => void }) {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  return <header className="topbar"><button className="mobile-menu" onClick={onMenu} aria-label="Ouvrir la navigation"><SlidersHorizontal size={20} /></button><div className="breadcrumbs"><span>Zeno</span><ChevronRight size={14} /><strong>{roleLabels[role]}</strong></div><div className="topbar-actions"><button className="search-trigger" onClick={onSearch}><Search size={16} /><span>Rechercher un élève, un enseignant…</span><kbd>⌘ K</kbd></button><button className="icon-button has-dot" aria-label="Notifications"><Bell size={18} /></button><button className="icon-button" aria-label="Aide"><CircleDollarIcon /></button><div className="role-menu-wrap"><button className="top-avatar" onClick={() => setRoleMenuOpen((open) => !open)} aria-label="Changer de rôle">{roleInitials[role]}</button>{roleMenuOpen && <div className="role-menu">{(Object.keys(roleLabels) as Role[]).map((candidate) => <button key={candidate} className={candidate === role ? 'selected' : ''} onClick={() => { onRoleChange(candidate); setRoleMenuOpen(false); }}>{roleLabels[candidate]}<small>{roleNames[candidate]}</small></button>)}</div>}</div></div></header>;
+  return <header className="topbar"><button className="mobile-menu" onClick={onMenu} aria-label="Ouvrir la navigation"><SlidersHorizontal size={20} /></button><div className="breadcrumbs"><span>Zeno</span><ChevronRight size={14} /><strong>{roleLabels[role]}</strong></div><div className="topbar-actions"><button className="search-trigger" onClick={onSearch}><Search size={16} /><span>Rechercher un élève, un enseignant…</span><kbd>⌘ K</kbd></button><button className="icon-button has-dot" aria-label="Notifications"><Bell size={18} /></button><button className="icon-button" aria-label="Aide"><CircleDollarIcon /></button><div className="role-menu-wrap"><button className="top-avatar" onClick={() => setRoleMenuOpen((open) => !open)} aria-label="Changer de rôle">{roleInitials[role]}</button>{roleMenuOpen && <div className="role-menu">{(Object.keys(roleLabels) as Role[]).map((candidate) => <button key={candidate} className={candidate === role ? 'selected' : ''} onClick={() => { onRoleChange(candidate); setRoleMenuOpen(false); }}>{roleLabels[candidate]}<small>{roleNames[candidate]}</small></button>)}<button className="role-menu-signout" onClick={() => { onSignOut(); setRoleMenuOpen(false); }}>Se déconnecter</button></div>}</div></div></header>;
 }
 
 function CircleDollarIcon() { return <span className="question-mark">?</span>; }
@@ -248,6 +286,8 @@ function AccountantDashboard({ onNavigate }: { onNavigate: (view: View) => void 
 }
 
 function setToastFromButton(message: string) { window.dispatchEvent(new CustomEvent('zeno-toast', { detail: message })); }
+function downloadFile(filename: string, content: string, type = 'text/csv;charset=utf-8') { const url = URL.createObjectURL(new Blob([content], { type })); const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 500); }
+function csvCell(value: string | number) { return `"${String(value).replace(/"/g, '""')}"`; }
 
 function PageIntro({ eyebrow, title, subtitle, action }: { eyebrow: string; title: string; subtitle: string; action?: ReactNode }) { return <div className="page-intro"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>; }
 function Metric({ label, value, trend, icon: MetricIcon, tone }: { label: string; value: string; trend: string; icon: Icon; tone: string }) { return <div className="metric panel"><div className={`metric-icon ${tone}`}><MetricIcon size={19} /></div><span>{label}</span><strong>{value}</strong><small className={tone === 'red' ? 'negative' : ''}>{trend}</small></div>; }
@@ -265,7 +305,7 @@ function StudentsPage({ students, role, totalStudentCount, onAdd, onImport, onTo
   const [query, setQuery] = useState(''); const [showForm, setShowForm] = useState(false); const [name, setName] = useState(''); const [className, setClassName] = useState('6ème primaire A');
   const filtered = students.filter((student) => `${student.name} ${student.className}`.toLowerCase().includes(query.toLowerCase()));
   const submit = (event: FormEvent) => { event.preventDefault(); if (!name.trim()) return; onAdd(name.trim(), className); setName(''); setShowForm(false); };
-  return <><PageIntro eyebrow="Élèves · Année scolaire 2026–2027" title="Élèves" subtitle={`${totalStudentCount.toLocaleString('fr-FR')} élèves inscrits dans votre établissement.`} action={<div className="action-group"><label className="button secondary file-button"><Upload size={17} /> Importer Excel / CSV<input className="file-input" type="file" accept=".csv,text/csv" onChange={(event) => { const file = event.target.files?.[0]; if (file) onImport(file); event.currentTarget.value = ''; }} /></label><button className="button primary" onClick={() => setShowForm((value) => !value)}><Plus size={17} /> Ajouter un élève</button></div>} />{showForm && <form className="inline-form panel" onSubmit={submit}><div><p className="eyebrow">Nouvelle inscription</p><h2>Ajouter un élève</h2></div><label>Nom complet<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex. Sarah Kabeya" autoFocus /></label><label>Classe<select value={className} onChange={(event) => setClassName(event.target.value)}><option>6ème primaire A</option><option>6ème primaire B</option><option>5ème primaire A</option><option>4ème primaire B</option></select></label><div className="form-actions"><button type="button" className="button secondary" onClick={() => setShowForm(false)}>Annuler</button><button className="button primary" type="submit">Enregistrer l’élève</button></div></form>}<section className="panel table-panel"><div className="table-toolbar"><div className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un élève…" /></div><div className="toolbar-actions"><button className="filter-button"><SlidersHorizontal size={16} /> Toutes les classes</button><button className="filter-button"><SlidersHorizontal size={16} /> Statut</button><button className="icon-button"><Download size={17} /></button></div></div><div className="table-meta"><span><strong>{filtered.length}</strong> résultats</span><span className="muted">Les données sont filtrées selon vos permissions · {roleLabels[role]}</span></div><div className="students-table"><div className="table-head"><span>Élève</span><span>Classe</span><span>Présence</span><span>Solde scolaire</span><span>Statut</span><span /></div>{filtered.map((student) => <div className="table-row" key={student.id}><span className="student-cell"><span className="avatar">{student.initials}</span><span><strong>{student.name}</strong><small>Né le 14/03/2013 · ID ZN-{String(student.id).padStart(4, '0')}</small></span></span><span>{student.className}</span><span><strong>{student.attendance}%</strong><div className="mini-progress"><span style={{ width: `${student.attendance}%` }} /></div></span><span className={student.balance === 'À jour' ? 'positive-text' : 'warning-text'}>{student.balance}</span><span><span className={`status-pill ${student.status === 'Actif' ? 'green' : 'amber'}`}>{student.status}</span></span><button className="row-more" aria-label={`Options pour ${student.name}`}><MoreHorizontal size={18} /></button></div>)}</div><div className="pagination"><span>Affichage de 1 à {filtered.length} sur {totalStudentCount.toLocaleString('fr-FR')} élèves</span><div><button className="page-number active">1</button><button className="page-number">2</button><button className="page-number">3</button><button className="page-number"><ChevronRight size={15} /></button></div></div></section></>;
+  return <><PageIntro eyebrow="Élèves · Année scolaire 2026–2027" title="Élèves" subtitle={`${totalStudentCount.toLocaleString('fr-FR')} élèves inscrits dans votre établissement.`} action={<div className="action-group"><label className="button secondary file-button"><Upload size={17} /> Importer Excel / CSV<input className="file-input" type="file" accept=".csv,text/csv" onChange={(event) => { const file = event.target.files?.[0]; if (file) onImport(file); event.currentTarget.value = ''; }} /></label><button className="button primary" onClick={() => setShowForm((value) => !value)}><Plus size={17} /> Ajouter un élève</button></div>} />{showForm && <form className="inline-form panel" onSubmit={submit}><div><p className="eyebrow">Nouvelle inscription</p><h2>Ajouter un élève</h2></div><label>Nom complet<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex. Sarah Kabeya" autoFocus /></label><label>Classe<select value={className} onChange={(event) => setClassName(event.target.value)}><option>6ème primaire A</option><option>6ème primaire B</option><option>5ème primaire A</option><option>4ème primaire B</option></select></label><div className="form-actions"><button type="button" className="button secondary" onClick={() => setShowForm(false)}>Annuler</button><button className="button primary" type="submit">Enregistrer l’élève</button></div></form>}<section className="panel table-panel"><div className="table-toolbar"><div className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un élève…" /></div><div className="toolbar-actions"><button className="filter-button"><SlidersHorizontal size={16} /> Toutes les classes</button><button className="filter-button"><SlidersHorizontal size={16} /> Statut</button><button className="icon-button" onClick={() => { const csv = [['Nom', 'Classe', 'Présence', 'Solde', 'Statut'], ...filtered.map((student) => [student.name, student.className, `${student.attendance}%`, student.balance, student.status])].map((row) => row.map(csvCell).join(',')).join('\\n'); downloadFile('zeno-eleves.csv', `\\ufeff${csv}`); onToast('La liste filtrée des élèves a été exportée.'); }} aria-label="Exporter les élèves"><Download size={17} /></button></div></div><div className="table-meta"><span><strong>{filtered.length}</strong> résultats</span><span className="muted">Les données sont filtrées selon vos permissions · {roleLabels[role]}</span></div><div className="students-table"><div className="table-head"><span>Élève</span><span>Classe</span><span>Présence</span><span>Solde scolaire</span><span>Statut</span><span /></div>{filtered.map((student) => <div className="table-row" key={student.id}><span className="student-cell"><span className="avatar">{student.initials}</span><span><strong>{student.name}</strong><small>Né le 14/03/2013 · ID ZN-{String(student.id).padStart(4, '0')}</small></span></span><span>{student.className}</span><span><strong>{student.attendance}%</strong><div className="mini-progress"><span style={{ width: `${student.attendance}%` }} /></div></span><span className={student.balance === 'À jour' ? 'positive-text' : 'warning-text'}>{student.balance}</span><span><span className={`status-pill ${student.status === 'Actif' ? 'green' : 'amber'}`}>{student.status}</span></span><button className="row-more" aria-label={`Options pour ${student.name}`}><MoreHorizontal size={18} /></button></div>)}</div><div className="pagination"><span>Affichage de 1 à {filtered.length} sur {totalStudentCount.toLocaleString('fr-FR')} élèves</span><div><button className="page-number active">1</button><button className="page-number">2</button><button className="page-number">3</button><button className="page-number"><ChevronRight size={15} /></button></div></div></section></>;
 }
 
 function AttendancePage({ attendance, setAttendance, saved, onSave }: { attendance: Record<number, AttendanceStatus>; setAttendance: (value: Record<number, AttendanceStatus>) => void; saved: boolean; onSave: () => void }) {
@@ -277,7 +317,7 @@ function StatBox({ value, label, tone }: { value: string; label: string; tone: s
 function GradesPage({ grades, onGradeChange, onSubmit, onToast }: { grades: GradeRow[]; onGradeChange: (id: number, score: string) => void; onSubmit: () => void; onToast: (message: string) => void }) {
   const validGrades = grades.map((grade) => Number(grade.score)).filter((score) => Number.isFinite(score));
   const average = validGrades.length ? (validGrades.reduce((sum, score) => sum + score, 0) / validGrades.length).toFixed(1).replace('.', ',') : '—';
-  return <><PageIntro eyebrow="Académique · Notes" title="Saisie des notes" subtitle="1er trimestre · Évaluation T1 · Mathématiques · 6ème primaire A" action={<button className="button primary" onClick={onSubmit}><CheckCircle2 size={17} /> Soumettre pour validation</button>} /><div className="grades-layout"><section className="panel table-panel"><div className="table-toolbar"><div><p className="eyebrow">{grades.length} élèves</p><h2>Évaluation T1</h2></div><button className="filter-button" onClick={() => onToast('Export CSV disponible depuis la liste des notes.')}><Download size={16} /> Exporter</button></div><div className="grades-table"><div className="table-head"><span>Élève</span><span>Note /20</span><span>Appréciation</span><span>Statut</span></div>{grades.map((grade) => <div className="table-row" key={grade.id}><span className="student-cell"><span className="avatar">{grade.name.split(' ').map((part) => part[0]).join('')}</span><span><strong>{grade.name}</strong><small>6ème primaire A</small></span></span><input className="grade-input" inputMode="decimal" value={grade.score} onChange={(event) => onGradeChange(grade.id, event.target.value)} aria-label={`Note de ${grade.name}`} /><span className="muted">{grade.appreciation}</span><span className={`status-pill ${grade.status === 'Soumis' ? 'amber' : grade.status === 'Validée' ? 'green' : 'neutral'}`}>{grade.status}</span></div>)}</div></section><aside className="panel grade-summary"><p className="eyebrow">Résumé</p><h2>Performance de la classe</h2><div className="summary-number">{average}<span>/20</span></div><div className="summary-line"><span>Notes saisies</span><strong>{validGrades.length} / {grades.length}</strong></div><div className="summary-line"><span>État du lot</span><strong>{grades.every((grade) => grade.status === 'Soumis') ? 'Soumis' : 'Brouillon'}</strong></div><div className="notice blue"><Sparkles size={16} /><span>Les notes sont conservées localement avant synchronisation.</span></div></aside></div></>;
+  return <><PageIntro eyebrow="Académique · Notes" title="Saisie des notes" subtitle="1er trimestre · Évaluation T1 · Mathématiques · 6ème primaire A" action={<button className="button primary" onClick={onSubmit}><CheckCircle2 size={17} /> Soumettre pour validation</button>} /><div className="grades-layout"><section className="panel table-panel"><div className="table-toolbar"><div><p className="eyebrow">{grades.length} élèves</p><h2>Évaluation T1</h2></div><button className="filter-button" onClick={() => { const csv = [['Élève', 'Classe', 'Note /20', 'Appréciation', 'Statut'], ...grades.map((grade) => [grade.name, '6ème primaire A', grade.score, grade.appreciation, grade.status])].map((row) => row.map(csvCell).join(',')).join('\\n'); downloadFile('zeno-notes.csv', `\\ufeff${csv}`); onToast('Les notes ont été exportées en CSV.'); }}><Download size={16} /> Exporter</button></div><div className="grades-table"><div className="table-head"><span>Élève</span><span>Note /20</span><span>Appréciation</span><span>Statut</span></div>{grades.map((grade) => <div className="table-row" key={grade.id}><span className="student-cell"><span className="avatar">{grade.name.split(' ').map((part) => part[0]).join('')}</span><span><strong>{grade.name}</strong><small>6ème primaire A</small></span></span><input className="grade-input" inputMode="decimal" value={grade.score} onChange={(event) => onGradeChange(grade.id, event.target.value)} aria-label={`Note de ${grade.name}`} /><span className="muted">{grade.appreciation}</span><span className={`status-pill ${grade.status === 'Soumis' ? 'amber' : grade.status === 'Validée' ? 'green' : 'neutral'}`}>{grade.status}</span></div>)}</div></section><aside className="panel grade-summary"><p className="eyebrow">Résumé</p><h2>Performance de la classe</h2><div className="summary-number">{average}<span>/20</span></div><div className="summary-line"><span>Notes saisies</span><strong>{validGrades.length} / {grades.length}</strong></div><div className="summary-line"><span>État du lot</span><strong>{grades.every((grade) => grade.status === 'Soumis') ? 'Soumis' : 'Brouillon'}</strong></div><div className="notice blue"><Sparkles size={16} /><span>Les notes sont conservées localement avant synchronisation.</span></div></aside></div></>;
 }
 
 function TimetablePage({ onToast }: { onToast: (message: string) => void }) { const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']; return <><PageIntro eyebrow="Planning · 6ème primaire A" title="Emploi du temps" subtitle="Année scolaire 2026–2027 · Trimestre 1" action={<div className="action-group"><button className="button secondary" onClick={() => onToast('La version imprimable sera générée ici.')}><Download size={17} /> Imprimer</button><button className="button primary" onClick={() => onToast('Création d’un créneau — vérification des conflits activée.')}><Plus size={17} /> Ajouter un créneau</button></div>} /><section className="panel timetable-panel"><div className="conflict-banner"><AlertTriangle size={18} /><span><strong>Conflit de planification détecté</strong><small>Patrick est déjà assigné à la classe 6B lundi à 10:00. Résolvez ce conflit avant d’enregistrer.</small></span><button className="text-button" onClick={() => onToast('Le conflit est ouvert pour résolution.')}>Résoudre</button></div><div className="timetable-grid"><div className="time-column"><span /><span>08:00</span><span>10:00</span><span>12:00</span><span>14:00</span><span>16:00</span></div>{days.map((day, index) => <div className="day-column" key={day}><strong>{day}</strong><div className="time-slot"><span className="lesson blue-lesson">Mathématiques<small>Patrick · Salle 12</small></span></div><div className="time-slot">{index < 3 && <span className="lesson violet-lesson">Français<small>Marie · Salle 4</small></span>}</div><div className="time-slot" /><div className="time-slot">{index === 1 && <span className="lesson amber-lesson">Sciences<small>David · Salle 8</small></span>}</div><div className="time-slot" /></div>)}</div></section></>; }

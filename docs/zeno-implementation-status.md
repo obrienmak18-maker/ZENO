@@ -25,3 +25,9 @@ Le choix `Mobile Money · test` est explicitement un mode de démonstration. Auc
 ## Publication
 
 Le dépôt est prêt à être importé manuellement dans Vercel avec `Root Directory: .`, `Framework: Vite`, `Build Command: npm run build`, `Output Directory: dist/public` et branche de production `main`. Aucun déploiement Vercel n’est exécuté par cette livraison.
+
+## Socle de production ajouté
+
+Le frontend contient désormais un client Supabase optionnel, un écran de connexion/inscription, une persistance de session, un garde d’authentification et un mode local explicitement séparé. Lorsque Supabase est configuré, l’onboarding appelle la fonction sécurisée `zeno_bootstrap_school`, qui crée l’établissement, l’année active, les rôles, le niveau primaire, deux classes, deux matières et la période de notes. Les nouveaux élèves sont synchronisés opportunistiquement vers `zeno_students` et inscrits dans le journal d’activité.
+
+Aucun projet Supabase Zeno dédié n’a été créé ou modifié dans cette livraison. Les seuls projets accessibles actuellement sont `IDEALY` et un projet inactif sans nom Zeno identifiable ; ils ne sont pas utilisés. La mise en production des données nécessite donc que le propriétaire crée ou sélectionne explicitement un projet Supabase vierge dédié à Zeno, applique les deux migrations et renseigne les deux variables Vercel décrites dans le README.

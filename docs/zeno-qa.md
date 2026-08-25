@@ -8,3 +8,8 @@ Le bouton « Entrer dans Zeno » termine l’onboarding, ferme le mode de config
 Le parcours d’import CSV a été testé avec 3 lignes, dont un doublon. Zeno a ajouté 2 élèves, ignoré le doublon, augmenté le compteur de 1 284 à 1 286 et affiché un toast explicite. L’action « Importer Excel / CSV » exécute donc bien un traitement local réel pour les fichiers CSV.
 Le module Notes a été vérifié : la note de Kevin Mukendi a été modifiée de 15 à 18 et la moyenne de classe s’est recalculée immédiatement de 14,4 à 15,0/20. La saisie est donc contrôlée par l’état de l’application et non par un texte statique.
 Le lot de notes passe de Brouillon à Soumis avec un toast de confirmation. Le module Finances s’ouvre ensuite avec un tableau des mouvements récents, références, modes de paiement et bouton d’enregistrement. Les parcours Notes et Finances sont maintenant réellement accessibles depuis la navigation Directeur.
+## Authentification et production
+
+Une prévisualisation isolée avec des variables Supabase de test affiche correctement le garde d’authentification : connexion e-mail/mot de passe, création de compte, affichage/masquage du mot de passe et mode local explicite. Le bouton de mode local ouvre le workspace sans appeler la base de test. Le build sans variables Supabase conserve automatiquement le mode local.
+
+La prévisualisation n’a utilisé aucune donnée réelle et aucune base Supabase n’a été modifiée pendant ce contrôle.
