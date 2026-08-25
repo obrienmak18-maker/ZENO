@@ -3,4 +3,5 @@ dist/
 .env
 .env.*
 !.env.example
+.supabase_apply_*.json
 .DS_Store

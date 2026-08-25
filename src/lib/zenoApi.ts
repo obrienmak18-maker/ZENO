@@ -35,9 +35,16 @@ export async function fetchSchoolStudents(schoolId: string) {
   return supabase.from('zeno_students').select('id,first_name,last_name,status,metadata').eq('school_id', schoolId).order('last_name').limit(500);
 }
 
-export async function createSchoolStudent(input: { schoolId: string; firstName: string; lastName: string; matricule?: string; metadata?: Record<string, unknown> }) {
+export async function createSchoolStudent(input: { schoolId: string; firstName: string; lastName: string; className: string; matricule?: string; metadata?: Record<string, unknown> }) {
   if (!supabase) return { data: null, error: new Error('Supabase non configuré') };
-  return supabase.from('zeno_students').insert({ school_id: input.schoolId, first_name: input.firstName, last_name: input.lastName, matricule: input.matricule ?? null, metadata: input.metadata ?? {} }).select('id,first_name,last_name,status,metadata').single();
+  return supabase.rpc('zeno_create_student_with_enrollment', {
+    p_school_id: input.schoolId,
+    p_first_name: input.firstName,
+    p_last_name: input.lastName,
+    p_class_name: input.className,
+    p_matricule: input.matricule ?? null,
+    p_metadata: input.metadata ?? {},
+  });
 }
 
 export async function writeActivity(input: { schoolId: string; action: string; entityType: string; entityId?: string; metadata?: Record<string, unknown> }) {
