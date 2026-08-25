@@ -30,6 +30,6 @@ Le choix `Mobile Money · test` est explicitement un mode de préparation UX. Au
 
 ## Publication
 
-Le projet Vercel cible est `zeno-school-live`, avec le domaine [zeno-school-live.vercel.app](https://zeno-school-live.vercel.app). Les variables de production `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` sont enregistrées dans ce projet uniquement. Le domaine public répond et affiche le workspace Zeno. Une tentative de publication directe du dernier commit a été refusée par Vercel avec une erreur de permission `403`; le dépôt reste donc prêt pour l’import manuel ou la réautorisation de la connexion GitHub/Vercel. Le paquet `zeno-vercel-manual-upload.zip` accompagne cette remise.
+Le projet Vercel cible est `zeno-school-live`, avec le domaine [zeno-school-live.vercel.app](https://zeno-school-live.vercel.app). Les variables de production `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` sont enregistrées dans ce projet uniquement. Le domaine public répond et affiche le workspace Zeno, mais l’inspection du bundle actuellement servi ne retrouve pas l’URL Supabase : ce déploiement public est donc une ancienne version sans authentification Supabase effective. Une tentative de publication directe du dernier commit a été refusée par Vercel avec une erreur de permission `403`; le dépôt et le paquet `zeno-vercel-manual-upload.zip` sont prêts pour l’import manuel ou la réautorisation de la connexion GitHub/Vercel.
 
 Aucune opération récente n’a touché le dépôt Idealy, Netlify Idealy, le projet Vercel `inia` ou la base Supabase `IDEALY`.
