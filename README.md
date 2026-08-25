@@ -4,9 +4,9 @@ Zeno est une interface de gestion scolaire construite à partir de la fusion des
 
 ## Contenu
 
-L’application contient un shell responsive avec les rôles Directeur, Enseignant, Secrétaire et Comptable. Les espaces disponibles couvrent le tableau de bord par rôle, les élèves, le personnel, les classes, les présences, les notes, le planning, les finances et les paramètres.
+L’application contient un shell responsive avec les rôles Directeur, Enseignant, Secrétaire et Comptable. Les espaces disponibles couvrent le tableau de bord par rôle, les élèves, le personnel, les classes, les présences, les notes, les bulletins, le planning, les finances, les rapports, l’administration, les notifications, l’activité et les paramètres.
 
-Les interactions de démonstration incluent l’ajout local d’un élève, la recherche, la sélection Présent/Retard/Absent avec recalcul des compteurs, la validation d’un appel et le changement de rôle depuis le profil. Les données sont volontairement locales dans cette tranche ; la migration Supabase de base se trouve dans `supabase/migrations/20260825000000_zeno_core.sql`.
+Les workflows frontend fonctionnels incluent l’onboarding progressif avec identité, forme, statut, niveaux, structure, classes, équipe et droits ; l’ajout et la recherche d’élèves ; l’import CSV avec détection de doublons ; la présence Présent/Retard/Absent avec compteurs ; la saisie et la soumission des notes ; l’aperçu imprimable des bulletins ; l’enregistrement des paiements ; l’export d’une synthèse JSON ; et la conservation locale des données dans le navigateur. La migration Supabase de base se trouve dans `supabase/migrations/20260825000000_zeno_core.sql`.
 
 ## Vérification locale
 
@@ -44,4 +44,4 @@ La migration prépare l’isolation par établissement, les rôles, les inscript
 
 ## État de la livraison
 
-Le dépôt `ZENO` contient le code autonome, le lockfile npm, la configuration Vercel, la migration Supabase et le cahier des charges. Le dernier commit de publication doit être vérifié avec `git status` avant import dans Vercel. La connexion GitHub automatique peut être ajoutée plus tard depuis les réglages du projet Zeno, mais elle n’est pas nécessaire pour l’import manuel.
+Le dépôt `ZENO` contient le code autonome, le lockfile npm, la configuration Vercel, la migration Supabase, le cahier des charges et le journal QA. Le frontend est prêt pour une publication manuelle, mais la version actuelle doit être considérée comme une pré-production tant que Supabase dédié, authentification réelle, RLS et permissions serveur ne sont pas activés. La connexion GitHub automatique peut être ajoutée plus tard depuis les réglages du projet Zeno, mais elle n’est pas nécessaire pour l’import manuel.
