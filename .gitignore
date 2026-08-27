@@ -1,8 +1,11 @@
 node_modules/
 dist/
 functions/lib/
+firebase/functions/lib/
 **/target/
 src-tauri/gen/
+**/gen/
+*.tsbuildinfo
 .env
 .env.*
 !.env.example

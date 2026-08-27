@@ -1,32 +1,24 @@
 {
-  "name": "classe-school-platform",
-  "version": "0.1.0",
+  "name": "classe-platform",
+  "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "dev": "vite --config vite.config.ts --host 0.0.0.0",
-    "build": "vite build --config vite.config.ts",
-    "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "tauri:dev": ". \"$HOME/.cargo/env\" && tauri dev",
-    "tauri:build": ". \"$HOME/.cargo/env\" && tauri build",
-    "tauri:check": ". \"$HOME/.cargo/env\" && cargo check --manifest-path src-tauri/Cargo.toml"
-  },
-  "dependencies": {
-    "@vitejs/plugin-react": "^5.2.0",
-    "firebase": "^12.17.1",
-    "lucide-react": "^0.545.0",
-    "qrcode": "^1.5.4",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "vite": "^7.3.6"
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:rules": "firebase emulators:exec --project classe-rules-test --only firestore \"vitest run firebase/tests/firestore.rules.test.ts\"",
+    "firebase:build": "pnpm --dir firebase/functions build",
+    "firebase:deploy": "firebase deploy --only firestore:rules,functions,hosting",
+    "tauri:dev": "pnpm --filter @classe/desktop tauri:dev",
+    "tauri:build": "pnpm --filter @classe/desktop tauri:build"
   },
   "devDependencies": {
-    "@types/node": "^25.9.5",
-    "@types/qrcode": "^1.5.6",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@tauri-apps/cli": "^2.5.0",
-    "typescript": "~5.9.3"
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase-tools": "^15.28.2",
+    "turbo": "^2.5.6",
+    "vitest": "^4.1.11"
   }
 }

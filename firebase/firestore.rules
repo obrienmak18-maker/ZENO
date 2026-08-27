@@ -1,60 +1,122 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function authenticated() { return request.auth != null; }
-    function schoolId() { return request.auth.token.school_id; }
-    function role() { return request.auth.token.role; }
-    function sameSchool(id) { return authenticated() && schoolId() == id; }
-    function admin() { return authenticated() && role() == 'ADMINISTRATEUR'; }
-    function teacher() { return authenticated() && role() == 'PROFESSEUR'; }
-    function accountant() { return authenticated() && role() == 'COMPTABLE'; }
+    function signedIn() { return request.auth != null; }
+    function claimSchool() { return signedIn() && request.auth.token.school_id is string; }
+    function sameSchool(schoolId) { return claimSchool() && request.auth.token.school_id == schoolId; }
+    function roleIs(value) { return signedIn() && request.auth.token.role == value; }
+    function admin() { return roleIs('ADMINISTRATEUR') || roleIs('DIRECTEUR') || roleIs('admin') || roleIs('directeur'); }
+    function teacher() { return roleIs('PROFESSEUR') || roleIs('professeur'); }
+    function secretary() { return roleIs('SECRETAIRE') || roleIs('secretaire'); }
+    function accountant() { return roleIs('COMPTABLE') || roleIs('comptable'); }
+    function pedagogical() { return roleIs('RESPONSABLE_PEDAGOGIQUE') || admin(); }
+    function staff() { return admin() || teacher() || secretary() || accountant() || pedagogical() || roleIs('SURVEILLANT'); }
+    function hasScope(schoolId) { return exists(/databases/$(database)/documents/ecoles/$(schoolId)/affectations/$(request.auth.uid)); }
+    function validCreate(schoolId) { return sameSchool(schoolId) && request.resource.data.school_id == schoolId; }
+    function validUpdate(schoolId) { return sameSchool(schoolId) && resource.data.school_id == schoolId && request.resource.data.school_id == schoolId; }
 
-    match /profiles/{userId} {
-      allow read: if authenticated() && (request.auth.uid == userId || (admin() && resource.data.school_id == schoolId()));
-      allow create: if admin() && request.resource.data.school_id == schoolId();
-      allow update: if authenticated() && (request.auth.uid == userId || (admin() && resource.data.school_id == schoolId()));
-      allow delete: if admin() && resource.data.school_id == schoolId();
-    }
+    match /ecoles/{schoolId} {
+      allow read: if sameSchool(schoolId);
+      allow create: if false;
+      allow update: if admin() && sameSchool(schoolId);
+      allow delete: if false;
 
-    match /ecoles/{school} {
-      allow read: if sameSchool(school);
-      allow create, update, delete: if admin() && sameSchool(school);
-
-      match /{collection}/{document} {
-        allow read: if sameSchool(school);
-        allow create, update: if sameSchool(school) && (
-          admin() ||
-          (collection == 'notes' && teacher() && request.resource.data.saisiParId == request.auth.uid) ||
-          (collection == 'presences' && teacher() && request.resource.data.enregistreParId == request.auth.uid) ||
-          (collection == 'paiements' && accountant())
-        );
-        allow delete: if admin() && sameSchool(school);
+      match /profiles/{uid} {
+        allow get: if sameSchool(schoolId) && (request.auth.uid == uid || admin());
+        allow list: if admin() && sameSchool(schoolId);
+        allow create: if admin() && validCreate(schoolId);
+        allow update: if admin() && validUpdate(schoolId) || (request.auth.uid == uid && validUpdate(schoolId));
+        allow delete: if admin() && sameSchool(schoolId);
       }
 
-      match /eleves/{eleveId}/{collection}/{document} {
-        allow read: if sameSchool(school);
-        allow create, update: if sameSchool(school) && (
-          admin() ||
-          (collection == 'notes' && teacher() && request.resource.data.saisiParId == request.auth.uid) ||
-          (collection == 'presences' && teacher() && request.resource.data.enregistreParId == request.auth.uid) ||
-          (collection == 'paiements' && accountant())
-        );
-        allow delete: if admin() && sameSchool(school);
+      match /affectations/{uid} {
+        allow read: if sameSchool(schoolId) && (request.auth.uid == uid || admin() || pedagogical());
+        allow write: if admin() && validCreate(schoolId) && request.resource.data.profileId == uid;
+      }
+
+      match /eleves/{studentId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow create: if (admin() || secretary()) && validCreate(schoolId);
+        allow update: if (admin() || secretary()) && validUpdate(schoolId);
+        allow delete: if admin() && sameSchool(schoolId);
+      }
+
+      match /classes/{classId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow write: if (admin() || secretary()) && (request.resource.data.school_id == schoolId || resource.data.school_id == schoolId);
+      }
+
+      match /sections/{sectionId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow write: if admin() && (request.resource.data.school_id == schoolId || resource.data.school_id == schoolId);
+      }
+
+      match /matieres/{subjectId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow write: if admin() || pedagogical();
+      }
+
+      match /trimestres/{trimesterId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow write: if admin() || pedagogical();
+      }
+
+      match /planning/{entryId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow write: if (admin() || secretary()) && (request.resource.data.school_id == schoolId || resource.data.school_id == schoolId);
+      }
+
+      match /presences/{attendanceId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow create, update: if validCreate(schoolId) && (admin() || secretary() || roleIs('SURVEILLANT') || (teacher() && hasScope(schoolId)));
+        allow delete: if admin() && sameSchool(schoolId);
+      }
+
+      match /notes/{gradeId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow create, update: if validCreate(schoolId) && (admin() || pedagogical() || (teacher() && hasScope(schoolId)));
+        allow delete: if admin() || pedagogical();
+      }
+
+      match /bulletins/{bulletinId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow create, update: if (admin() || pedagogical()) && validCreate(schoolId);
+        allow delete: if admin() && sameSchool(schoolId);
+      }
+
+      match /paiements/{paymentId} {
+        allow read: if (admin() || accountant() || secretary()) && sameSchool(schoolId);
+        allow create, update: if validCreate(schoolId) && (admin() || accountant());
+        allow delete: if admin() && sameSchool(schoolId);
       }
 
       match /qr_tokens/{tokenId} {
-        allow get: if resource.data.status == 'pending' && resource.data.expiresAt > request.time;
-        allow list: if false;
-        allow create: if admin() && sameSchool(school) && request.resource.data.school_id == school;
-        allow update: if admin() && sameSchool(school) && request.resource.data.school_id == school;
-        allow delete: if admin() && sameSchool(school);
+        allow get: if sameSchool(schoolId) && resource.data.status == 'pending' && resource.data.expiresAt > request.time;
+        allow list: if admin() && sameSchool(schoolId);
+        allow create: if false;
+        allow update: if false;
+        allow delete: if false;
       }
 
       match /messages/{messageId} {
-        allow read: if sameSchool(school) && (resource.data.expediteurId == request.auth.uid || resource.data.destinataireId == request.auth.uid);
-        allow create: if sameSchool(school) && request.resource.data.expediteurId == request.auth.uid;
-        allow update: if sameSchool(school) && resource.data.destinataireId == request.auth.uid;
+        allow read: if sameSchool(schoolId) && (resource.data.expediteurId == request.auth.uid || resource.data.destinataireId == request.auth.uid);
+        allow create: if validCreate(schoolId) && request.resource.data.expediteurId == request.auth.uid;
+        allow update: if validUpdate(schoolId) && resource.data.destinataireId == request.auth.uid;
+        allow delete: if admin() && sameSchool(schoolId);
+      }
+
+      match /audit_logs/{auditId} {
+        allow read: if admin() && sameSchool(schoolId);
+        allow write: if false;
+      }
+
+      match /{collection}/{document} {
+        allow read: if staff() && sameSchool(schoolId) && collection in ['config', 'notifications', 'documents'];
+        allow write: if false;
       }
     }
+
+    match /profiles/{uid} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
   }
 }

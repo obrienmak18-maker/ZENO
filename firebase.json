@@ -1,13 +1,22 @@
 {
   "functions": {
-    "source": "functions",
+    "source": "firebase/functions",
     "runtime": "nodejs20"
   },
   "firestore": {
-    "rules": "firebase/firestore.rules"
+    "rules": "firebase/firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "firebase/storage.rules"
+  },
+  "emulators": {
+    "firestore": { "port": 8080 },
+    "functions": { "port": 5001 },
+    "ui": { "enabled": true, "port": 4000 }
   },
   "hosting": {
-    "public": "dist/public",
+    "public": "apps/desktop/dist/public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [{ "source": "**", "destination": "/index.html" }]
   }

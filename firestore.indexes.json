@@ -1,0 +1,9 @@
+{
+  "indexes": [
+    { "collectionGroup": "notes", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "trimester", "order": "ASCENDING" }] },
+    { "collectionGroup": "qr_tokens", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "profileId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] },
+    { "collectionGroup": "presences", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "dateKey", "order": "ASCENDING" }, { "fieldPath": "classId", "order": "ASCENDING" }] },
+    { "collectionGroup": "paiements", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "DESCENDING" }] }
+  ],
+  "fieldOverrides": []
+}
