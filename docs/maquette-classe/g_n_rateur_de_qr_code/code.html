@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Générateur de Code QR Personnel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#FFFFFF",
+                        "surface-variant": "#e8dfee",
+                        "surface-container-low": "#f9f1ff",
+                        "warning": "#F59E0B",
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-secondary-container": "#600037",
+                        "primary-fixed": "#eaddff",
+                        "on-primary-container": "#ede0ff",
+                        "tertiary-fixed": "#e5e0ef",
+                        "text-primary": "#1E293B",
+                        "secondary-container": "#fd56a7",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#25005a",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#b4136d",
+                        "primary": "#630ed4",
+                        "on-surface": "#1d1a24",
+                        "surface-container-highest": "#e8dfee",
+                        "outline-variant": "#ccc3d8",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#dfd7e6",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "success": "#10B981",
+                        "on-secondary-fixed-variant": "#8c0053",
+                        "on-background": "#1d1a24",
+                        "on-error-container": "#93000a",
+                        "background": "#fef7ff",
+                        "danger": "#EF4444",
+                        "inverse-surface": "#332f39",
+                        "tertiary-fixed-dim": "#c9c4d3",
+                        "text-secondary": "#64748B",
+                        "surface-container": "#f3ebfa",
+                        "on-tertiary-fixed": "#1c1a25",
+                        "on-error": "#ffffff",
+                        "outline": "#7b7487",
+                        "surface-bright": "#fef7ff",
+                        "secondary-fixed-dim": "#ffb0cd",
+                        "on-surface-variant": "#4a4455",
+                        "on-secondary-fixed": "#3e0022",
+                        "surface-tint": "#732ee4",
+                        "primary-container": "#7c3aed",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#4f4d59",
+                        "on-tertiary-fixed-variant": "#474551",
+                        "surface-container-high": "#ede5f4",
+                        "tertiary-container": "#686572",
+                        "on-tertiary-container": "#e8e4f2",
+                        "inverse-primary": "#d2bbff",
+                        "secondary-fixed": "#ffd9e4",
+                        "inverse-on-surface": "#f6eefc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "container-padding": "20px",
+                        "xs": "8px",
+                        "md": "16px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "display-stats": ["Inter"],
+                        "body-base": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "heading-lg": ["Inter"],
+                        "caption": ["Inter"],
+                        "heading-md": ["Inter"],
+                        "display-hero": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-stats": ["30px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-base": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["14px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "heading-lg": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "caption": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "heading-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "display-hero": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #dfd7e6; /* surface-dim */
+        }
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(99, 14, 212, 0.2); /* primary 20% */
+            box-shadow: 0px 10px 30px rgba(221, 214, 254, 0.4);
+        }
+        .pulse-border {
+            animation: pulse-border-anim 2s infinite;
+        }
+        @keyframes pulse-border-anim {
+            0% { border-color: rgba(99, 14, 212, 0.3); box-shadow: 0 0 0 0 rgba(99, 14, 212, 0.2); }
+            50% { border-color: rgba(99, 14, 212, 0.8); box-shadow: 0 0 0 10px rgba(99, 14, 212, 0); }
+            100% { border-color: rgba(99, 14, 212, 0.3); box-shadow: 0 0 0 0 rgba(99, 14, 212, 0); }
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-surface min-h-screen flex text-body-base">
+<!-- SideNavBar (Suppressed for this focused task flow, assuming it's a specific modal or dedicated page. We'll include it for context if it's the main dashboard, but the prompt implies a specific utility. Let's include the SideNav to anchor it in the app ecosystem, mapping "Generate QR" CTA logically to this page). -->
+<aside class="hidden md:flex flex-col h-full p-md bg-surface-container shadow-lg h-screen w-64 fixed left-0 top-0 z-40">
+<div class="mb-lg">
+<h1 class="font-heading-lg text-heading-lg font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                Admin Panel
+            </h1>
+<p class="font-caption text-caption text-text-secondary mt-1">Global Overview</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-primary font-bold border-r-4 border-primary bg-primary/10" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">qr_code_scanner</span>
+<span class="font-label-sm text-label-sm">Generate QR</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-label-sm text-label-sm">Classes</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full bg-primary text-on-primary py-3 rounded-xl font-label-sm text-label-sm hover:scale-102 transition-transform shadow-md">
+                Generate QR
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-64 p-lg md:p-xl flex flex-col min-h-screen relative overflow-hidden">
+<!-- Decorative Ambient Blurs -->
+<div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-secondary/10 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="max-w-4xl w-full mx-auto relative z-10 flex flex-col gap-lg items-center justify-center h-full flex-1">
+<div class="text-center mb-md">
+<h2 class="font-display-hero text-display-hero text-primary mb-2">QR Staff Access</h2>
+<p class="font-body-lg text-body-lg text-text-secondary">Select a staff member to generate a temporary access code.</p>
+</div>
+<!-- Bento Grid Layout for the Generator -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg w-full">
+<!-- Left Panel: Controls & Status -->
+<div class="lg:col-span-5 flex flex-col gap-lg">
+<!-- Selection Card -->
+<div class="glass-card rounded-3xl p-lg flex flex-col gap-md h-full">
+<label class="font-label-sm text-label-sm text-text-primary block mb-1" for="staff-select">Select Staff Member</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border border-outline-variant text-text-primary text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 pr-10 appearance-none font-body-base transition-colors duration-200" id="staff-select">
+<option disabled="" selected="">Choose a staff member...</option>
+<option>Dr. Marie Dupont</option>
+<option>Prof. Jean Martin</option>
+<option>Mme. Sophie Laurent</option>
+<option>M. Lucas Moreau</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-text-secondary pointer-events-none">expand_more</span>
+</div>
+<div class="mt-auto pt-lg border-t border-outline-variant/30">
+<h3 class="font-label-sm text-label-sm text-text-primary mb-3">Status</h3>
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-warning opacity-80"></div>
+<span class="font-body-base text-body-base text-text-secondary">En attente</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-success opacity-80"></div>
+<span class="font-body-base text-body-base text-text-secondary">Utilisé</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-danger opacity-80"></div>
+<span class="font-body-base text-body-base text-text-secondary">Expiré</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: QR Display -->
+<div class="lg:col-span-7">
+<div class="glass-card rounded-3xl p-xl flex flex-col items-center justify-center text-center h-full relative overflow-hidden">
+<!-- Status Badge (Dynamic) -->
+<div class="absolute top-lg right-lg bg-warning/10 text-warning px-4 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-2 border border-warning/20">
+<span class="material-symbols-outlined text-[16px]">pending</span>
+                            En attente
+                        </div>
+<div class="mb-lg mt-md">
+<h3 class="font-heading-lg text-heading-lg text-primary mb-1">Scan to Access</h3>
+<p class="font-body-base text-body-base text-text-secondary">Point your scanner directly at the code.</p>
+</div>
+<!-- QR Code Zone -->
+<div class="p-4 rounded-2xl bg-white border-2 border-dashed border-primary pulse-border relative group mb-lg transition-transform duration-300 hover:scale-105">
+<img alt="QR Code" class="w-48 h-48 object-cover rounded-lg" data-alt="A clean, high-contrast black and white square QR code centered in a bright white box. The aesthetic is purely functional and digital, with sharp geometric patterns typical of QR codes, ensuring clear legibility against the white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRylcVHONBTJp9evG1oFTW3bMs-ZvRmjis8RIMQiceU8WP9c7eKuu-XT7u9qufQHJCX8fGn0cFiq-HRdnm_jG3vf44dmBNQtgy38v2IQ8MiEgA_65JlVDSyqH7UB2smhyI5sUP_RkfqPtsm49g_yt13YT0Vb8V4fJriUhAjaYmPyPYUpfAEBz6XZ2xEEjNxYc8ls4FjGE47yxx71X0UBVV_TtwkOgpqD0SJl15WH2k4ah5lf8GMGn9WA"/>
+<!-- Scanner guideline overlay -->
+<div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-primary rounded-tl-lg m-2 pointer-events-none"></div>
+<div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-primary rounded-tr-lg m-2 pointer-events-none"></div>
+<div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-primary rounded-bl-lg m-2 pointer-events-none"></div>
+<div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-primary rounded-br-lg m-2 pointer-events-none"></div>
+</div>
+<!-- Timer -->
+<div class="flex items-center gap-3 bg-surface-variant px-6 py-3 rounded-full">
+<span class="material-symbols-outlined text-primary">timer</span>
+<span class="font-heading-md text-heading-md text-text-primary tracking-wider" id="countdown">14:59</span>
+</div>
+<!-- Progress Bar for Timer visual -->
+<div class="w-full max-w-xs h-1.5 bg-surface-variant rounded-full mt-4 overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-400 to-primary w-full" style="transition: width 1s linear;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple countdown logic for visual demonstration
+        let timeInSeconds = 15 * 60 - 1;
+        const display = document.getElementById('countdown');
+        const progressBar = document.querySelector('.bg-gradient-to-r');
+
+        setInterval(() => {
+            if (timeInSeconds <= 0) return;
+            const minutes = Math.floor(timeInSeconds / 60);
+            const seconds = timeInSeconds % 60;
+            display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const percentage = (timeInSeconds / (15 * 60)) * 100;
+            progressBar.style.width = `${percentage}%`;
+            
+            timeInSeconds--;
+        }, 1000);
+    </script>
+</body></html>

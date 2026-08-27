@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>CLASSE - Real-time Messaging</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#eaddff",
+                        "on-surface": "#1d1a24",
+                        "tertiary": "#4f4d59",
+                        "on-surface-variant": "#4a4455",
+                        "surface-container-high": "#ede5f4",
+                        "on-tertiary-fixed-variant": "#474551",
+                        "on-error": "#ffffff",
+                        "background": "#fef7ff",
+                        "on-primary-fixed": "#25005a",
+                        "secondary": "#b4136d",
+                        "danger": "#EF4444",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c9c4d3",
+                        "tertiary-fixed": "#e5e0ef",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-tertiary-container": "#e8e4f2",
+                        "warning": "#F59E0B",
+                        "on-secondary-fixed-variant": "#8c0053",
+                        "surface-container-low": "#f9f1ff",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#ccc3d8",
+                        "outline": "#7b7487",
+                        "secondary-fixed-dim": "#ffb0cd",
+                        "on-secondary-container": "#600037",
+                        "secondary-container": "#fd56a7",
+                        "primary": "#630ed4",
+                        "surface": "#FFFFFF",
+                        "inverse-on-surface": "#f6eefc",
+                        "inverse-primary": "#d2bbff",
+                        "text-secondary": "#64748B",
+                        "surface-container-highest": "#e8dfee",
+                        "on-primary-container": "#ede0ff",
+                        "surface-tint": "#732ee4",
+                        "success": "#10B981",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#fef7ff",
+                        "primary-container": "#7c3aed",
+                        "inverse-surface": "#332f39",
+                        "surface-variant": "#e8dfee",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-tertiary-fixed": "#1c1a25",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f3ebfa",
+                        "text-primary": "#1E293B",
+                        "tertiary-container": "#686572",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#dfd7e6",
+                        "on-secondary-fixed": "#3e0022",
+                        "on-background": "#1d1a24",
+                        "secondary-fixed": "#ffd9e4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "sm": "12px",
+                        "container-padding": "20px",
+                        "md": "16px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "display-hero": ["Inter"],
+                        "caption": ["Inter"],
+                        "heading-lg": ["Inter"],
+                        "heading-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-stats": ["Inter"],
+                        "body-base": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-hero": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "caption": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "heading-lg": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "heading-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-stats": ["30px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-base": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["14px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #f3ebfa; /* surface-container */
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Glassmorphism effects */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(124, 58, 237, 0.2); /* primary-300 at 20% */
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .ambient-shadow {
+            box-shadow: 0px 10px 30px rgba(221, 214, 254, 0.4);
+        }
+        
+        .ambient-shadow-top {
+            box-shadow: 0px -10px 30px rgba(221, 214, 254, 0.4);
+        }
+
+        /* Animations */
+        .slide-in-right {
+            animation: slideInRight 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .slide-out-right {
+            animation: slideOutRight 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .chat-bubble-in {
+            animation: bubbleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform: scale(0.9) translateY(10px);
+        }
+
+        @keyframes bubbleIn {
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden text-on-surface font-body-base">
+<!-- Mobile Top App Bar (List View) -->
+<header class="glass-panel w-full sticky top-0 z-40 px-lg py-md flex justify-between items-center ambient-shadow transition-all ease-in-out duration-200" id="main-header">
+<div class="flex items-center gap-xs">
+<span class="font-display-hero text-display-hero text-primary tracking-tight">CLASSE</span>
+<span class="font-heading-md text-heading-md text-text-secondary ml-2">Chat</span>
+</div>
+<div class="flex items-center gap-sm">
+<button aria-label="Search Messages" class="p-2 rounded-full hover:bg-surface-variant transition-colors text-primary">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button aria-label="Notifications" class="p-2 rounded-full hover:bg-surface-variant transition-colors text-primary relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full"></span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20">
+<img alt="Administrator Profile" class="w-full h-full object-cover" data-alt="A detailed portrait of a professional female school administrator in her late 30s, smiling warmly. She is wearing a modern lavender blazer over a crisp white shirt. The background is a slightly blurred, bright modern office space with subtle natural lighting coming from a window. The overall mood is approachable, competent, and matches a bright, modern corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDAlIYnJ_IslQl7s97X1kgYzvXvFnP56O86JJvd1G_JSi9Ktetc0qd4M1SKEh1IWY30tilQrV0HO73M2NGjoUrgj5PVhPy30fofeaGfdfCnh2g4bGBjEkoO8bcwvznl12rUJgCIbQXmpdtB0NmY7E6glPXj9u6AQeQxkI1CJlWnjcGYQ9Ux8utW8nRUPqIQIJgoHihcamKfuKTWuTLWyGwap1g86VMWoKP5p22cQ9ZJyRLdv09-_wYgg"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area: Conversation List -->
+<main class="flex-1 overflow-y-auto px-container-padding py-md pb-[100px] hide-scrollbar relative z-10" id="chat-list-view">
+<!-- Search & Filter -->
+<div class="mb-lg">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-surface border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 font-body-base text-body-base text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary transition-all ambient-shadow" placeholder="Search colleagues, parents..." type="text"/>
+</div>
+<div class="flex gap-sm mt-md overflow-x-auto hide-scrollbar pb-2">
+<button class="px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm whitespace-nowrap">All Messages</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-primary-container/10 transition-colors">Staff</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-primary-container/10 transition-colors">Parents</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-primary-container/10 transition-colors">Unread</button>
+</div>
+</div>
+<!-- Conversation List -->
+<div class="flex flex-col gap-sm">
+<!-- Chat Item 1 (Unread) -->
+<div class="glass-card rounded-3xl p-sm flex items-center gap-md cursor-pointer hover:bg-surface-variant/50 transition-colors active:scale-[0.98]" onclick="openChat('Sarah Jenkins', 'Head of Math')">
+<div class="relative flex-shrink-0">
+<img class="w-14 h-14 rounded-full object-cover border border-primary/10" data-alt="A close-up portrait of a young male teacher with glasses and a short beard, smiling slightly. He is wearing a neat blue button-down shirt. The background is a brightly lit, modern classroom setting with soft focus. The image conveys professionalism and friendliness in a light-mode educational environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-Tx5b_35g046RM_qdpdx5JtS2XJuo9u1AfZ36GqSibkkWyOqELgdEJd7bnVrJ4v2uxMBtthq7_tVpjP2aAbldmJp7LOcH0m7OwMRENTZ43RFky1lm7qFkqb91lVuYFcpmDl2S5JmxPbGxgK1fa7gWM3W6rEyJEvwvaBRw1SwJatRXhyUGKH_E98OMcTRhQtywE6_TPBd1y7gJMXASSZHI70u3oRmqTieOxhRZhv_WDbYTcQpKH3sAVg"/>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-success rounded-full border-2 border-surface"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-heading-md text-heading-md text-on-surface truncate">Sarah Jenkins</h3>
+<span class="font-caption text-caption text-primary font-bold">10:42 AM</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="font-body-base text-body-base text-on-surface font-semibold truncate mr-2">Could you review the midterm grades?</p>
+<span class="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0">2</span>
+</div>
+</div>
+</div>
+<!-- Chat Item 2 (Read) -->
+<div class="glass-card rounded-3xl p-sm flex items-center gap-md cursor-pointer hover:bg-surface-variant/50 transition-colors active:scale-[0.98]" onclick="openChat('Michael Chang', 'Science Dept')">
+<div class="relative flex-shrink-0">
+<img class="w-14 h-14 rounded-full object-cover border border-primary/10" data-alt="A portrait of an middle-aged male teacher with grey hair and a warm smile, wearing a casual polo shirt. The background is a bright, modern school hallway, slightly blurred. The lighting is soft and airy, matching a clean, corporate-academic visual style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1a3VY9iP-iNWTQKU300enJh2PVqrFgWxwJzQ-VfONvH6CoZi-TBDR4_bZi0AZhaEKWMwe1amdBTffF4iCkIF9se8Ms621aQoh0rNeBMDxpyQl_nU3RLB2Dq5Kn7EaZr84NwVNUkqca8zpQqCT2615wOyoC4ZEVjdHCrXP3qAYjMUpoP4KG_vX9v7mvBAJUJqwGoCOa5GuOQBiRLm9-u8tBqR9gN94DSAlT8DR2ehx40JJeXwWhPjbqQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-heading-md text-heading-md text-on-surface truncate">Michael Chang</h3>
+<span class="font-caption text-caption text-text-secondary">Yesterday</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary">done_all</span>
+<p class="font-body-base text-body-base text-text-secondary truncate">The lab equipment arrived this morning.</p>
+</div>
+</div>
+</div>
+<!-- Chat Item 3 (Group) -->
+<div class="glass-card rounded-3xl p-sm flex items-center gap-md cursor-pointer hover:bg-surface-variant/50 transition-colors active:scale-[0.98]">
+<div class="w-14 h-14 rounded-full bg-primary-container/20 flex items-center justify-center flex-shrink-0 border border-primary/20 text-primary">
+<span class="material-symbols-outlined">group</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-heading-md text-heading-md text-on-surface truncate">Grade 10 Teachers</h3>
+<span class="font-caption text-caption text-text-secondary">Tue</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="text-xs font-bold text-primary">Elena:</span>
+<p class="font-body-base text-body-base text-text-secondary truncate">I'll update the shared calendar.</p>
+</div>
+</div>
+</div>
+<!-- Chat Item 4 -->
+<div class="glass-card rounded-3xl p-sm flex items-center gap-md cursor-pointer hover:bg-surface-variant/50 transition-colors active:scale-[0.98]">
+<div class="relative flex-shrink-0">
+<div class="w-14 h-14 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed font-heading-md">
+                        DR
+                    </div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-warning rounded-full border-2 border-surface"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-heading-md text-heading-md text-on-surface truncate">David Rodriguez</h3>
+<span class="font-caption text-caption text-text-secondary">Mon</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-outline">done</span>
+<p class="font-body-base text-body-base text-text-secondary truncate">Thanks for sending that over.</p>
+</div>
+</div>
+</div>
+<!-- Chat Item 5 -->
+<div class="glass-card rounded-3xl p-sm flex items-center gap-md cursor-pointer hover:bg-surface-variant/50 transition-colors active:scale-[0.98]">
+<div class="relative flex-shrink-0">
+<img class="w-14 h-14 rounded-full object-cover border border-primary/10" data-alt="A portrait of a young female staff member looking focused, holding a tablet. She has curly hair and wears a professional cardigan. Background is a bright, modern school library setting with soft, high-key lighting, maintaining a clean, premium visual aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5Qa3uPDHFTacAfieXjUmj0yuQJAFOvGepwy0kO1JG1WJHbJidPq17d4WugUSujBGyQcbZq5TRxPHBGlxgGzE77YP0SNUAv7CHPW7zc4UN3awJbi6I7-tV8vCWs6sh2ymsxAeL8-9kPxcVTjbVsWycwb7EkkBtV0xrXyIQFTTpCt2l2JGQxhK5RZuSDFprwgn8GFTph3NMskFCQO9g75eJGuij2EeZOXzS6qCmpfVMwQdCzR5Mb41fHw"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-heading-md text-heading-md text-on-surface truncate">Emma Wilson</h3>
+<span class="font-caption text-caption text-text-secondary">Last Week</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary">done_all</span>
+<p class="font-body-base text-body-base text-text-secondary truncate">Yes, the parents have been notified.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button aria-label="New Message" class="fixed bottom-[90px] right-lg w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all z-40 ambient-shadow">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+<!-- Bottom Navigation Bar (Shared Component JSON) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl rounded-t-3xl shadow-[0px_-10px_30px_#DDD6FE66] dark:shadow-none transition-transform duration-150">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-primary-container/10 p-2 rounded-2xl active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-primary-container/10 p-2 rounded-2xl active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">fact_check</span>
+<span class="font-label-sm text-label-sm">Attendance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-primary-container/10 p-2 rounded-2xl active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">grade</span>
+<span class="font-label-sm text-label-sm">Grades</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-2xl p-2 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">forum</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+</nav>
+<!-- ========================================== -->
+<!-- Chat Interface Overlay (Hidden by default) -->
+<!-- ========================================== -->
+<div class="fixed inset-0 z-50 bg-background hidden flex-col" id="chat-interface">
+<!-- Chat Header -->
+<header class="glass-panel w-full px-4 py-3 flex items-center gap-3 ambient-shadow z-20">
+<button class="p-2 -ml-2 rounded-full hover:bg-surface-variant text-on-surface transition-colors active:scale-90" onclick="closeChat()">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-3 flex-1">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover border border-primary/20" data-alt="A placeholder for the active chat user avatar, showing a modern, professional portrait suitable for a bright, clean educational administration application interface." id="active-chat-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-8r27ZE2_OhP6MWUAQVbyA_CaBWw1Db2-VNaz94dgi6N1eU0Ap1rxT183JYgtOMwZCGQ7xkBrElH5zafxOrjUqWcsmx5iJh_AGHgR_J9yt8WOidVTfhHoRLtfHLoGyhOC_w9KKzZHRClJQX9xUxcpOsDjscsZMK0Ib4kVTB6Z8ctC8jTws7G2apVQpEmMl7rrGSxoBV_rgQ0sIdDKUG4vScHYGNBVLGZDmhpszZtCVgTBfH57R1myHg"/>
+<div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border border-surface"></div>
+</div>
+<div>
+<h2 class="font-heading-md text-heading-md text-on-surface leading-tight" id="active-chat-name">Sarah Jenkins</h2>
+<p class="font-caption text-caption text-text-secondary leading-tight" id="active-chat-role">Head of Math • Online</p>
+</div>
+</div>
+<div class="flex items-center">
+<button class="p-2 rounded-full hover:bg-surface-variant text-primary transition-colors">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Message History Canvas -->
+<div class="flex-1 overflow-y-auto px-container-padding py-md flex flex-col gap-sm bg-[#fcf8ff] hide-scrollbar" style="background-image: radial-gradient(#d2bbff 1px, transparent 1px); background-size: 20px 20px; background-position: -10px -10px;">
+<!-- Date Divider -->
+<div class="flex justify-center my-2">
+<span class="px-3 py-1 bg-surface-variant/80 backdrop-blur-sm rounded-full font-caption text-caption text-text-secondary">Today</span>
+</div>
+<!-- Incoming Message -->
+<div class="flex items-end gap-2 max-w-[85%] chat-bubble-in" style="animation-delay: 0.1s;">
+<img class="w-6 h-6 rounded-full object-cover mb-1 opacity-80" data-alt="A small circular avatar placeholder for an incoming chat message, showing a generic professional portrait." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1c-CbuvyMeWyQyR-pi4VnY3Bbx-QJETQecvJT8i-iWJAOxvankUHXnqOPDOoYhiWJyzsuTi5QxPb5bLfSiNUBJoPA0_4qIHGWaTy2MvRKvMbigkMyI4NZnA-VjTcCfHmAqh07qpFGCmq3JD9TcJ1QK8702-89U_Bp4PqpPKPS6qP-iVJmYiFY9c61BtrIvz_NKIDIXbIowA3upyFztjJHYgMG1K8gPuA5qJ_ChldkKtE0h-I1Ns4fjw"/>
+<div class="flex flex-col gap-1">
+<div class="glass-card bg-white rounded-2xl rounded-bl-none p-3 shadow-sm border border-outline-variant/20">
+<p class="font-body-base text-body-base text-on-surface">Hi! Do you have a minute to look at the midterm grades for Grade 10?</p>
+</div>
+<span class="font-caption text-caption text-text-secondary ml-1">10:40 AM</span>
+</div>
+</div>
+<!-- Incoming Message (Consecutive) -->
+<div class="flex items-end gap-2 max-w-[85%] chat-bubble-in" style="animation-delay: 0.2s;">
+<div class="w-6 h-6 rounded-full mb-1 flex-shrink-0"></div> <!-- Spacer for alignment -->
+<div class="flex flex-col gap-1">
+<div class="glass-card bg-white rounded-2xl rounded-bl-none p-3 shadow-sm border border-outline-variant/20">
+<p class="font-body-base text-body-base text-on-surface">I think there might be an issue with the curve we applied.</p>
+</div>
+<span class="font-caption text-caption text-text-secondary ml-1">10:42 AM</span>
+</div>
+</div>
+<!-- Outgoing Message -->
+<div class="flex items-end gap-2 max-w-[85%] self-end chat-bubble-in" style="animation-delay: 0.3s;">
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-primary text-white rounded-2xl rounded-br-none p-3 shadow-sm shadow-primary/20">
+<p class="font-body-base text-body-base">Sure, I can take a look right now. Which section specifically?</p>
+</div>
+<div class="flex items-center gap-1 mr-1">
+<span class="font-caption text-caption text-text-secondary">10:45 AM</span>
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+</div>
+<!-- Date Divider -->
+<div class="flex justify-center my-4 chat-bubble-in" style="animation-delay: 0.4s;">
+<span class="px-3 py-1 bg-surface-variant/80 backdrop-blur-sm rounded-full font-caption text-caption text-text-secondary">New Messages</span>
+</div>
+<!-- Incoming Message (Unread) -->
+<div class="flex items-end gap-2 max-w-[85%] chat-bubble-in" style="animation-delay: 0.5s;">
+<img class="w-6 h-6 rounded-full object-cover mb-1 opacity-80" data-alt="A small circular avatar placeholder for an incoming chat message." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYJ-eHXzYcyh_bBV6sclRgz7czuLZB6eC8MbhRQPCoJkbbQG-_yKLq_uUB6TTZ6d9hJf-jiCVxfxn3DmQV6Gor-R5HYuWALX7rgohfg7PWNyslOmPhUsRauElGXek2KrqR3z_dBTpyhARuNrn60kIUWeuqoKnfopqU0n1WkOl7w4yA6l3L7Bzf3LBdcbMhMRFgL0U83RjiOSc4a8vShbAkBrZik04hdNXwdL552cJMBMXeBBH89dMC3A"/>
+<div class="flex flex-col gap-1">
+<div class="glass-card bg-white rounded-2xl rounded-bl-none p-3 shadow-sm border border-outline-variant/20">
+<p class="font-body-base text-body-base text-on-surface">Mainly Section B. Several students dropped unexpectedly.</p>
+</div>
+<span class="font-caption text-caption text-text-secondary ml-1">10:48 AM</span>
+</div>
+</div>
+<!-- Auto-scroll anchor -->
+<div id="chat-bottom"></div>
+</div>
+<!-- Input Area -->
+<div class="glass-panel w-full p-3 pb-6 flex items-end gap-2 ambient-shadow-top z-20">
+<button class="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors shrink-0 mb-1">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<div class="flex-1 bg-surface rounded-3xl border border-primary/20 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all flex items-end min-h-[44px]">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none py-3 px-4 font-body-base text-body-base text-on-surface placeholder:text-outline max-h-[120px] hide-scrollbar" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 120) + 'px'" placeholder="Type a message..." rows="1"></textarea>
+<button class="p-2 mr-1 text-outline hover:text-primary transition-colors shrink-0 mb-0.5">
+<span class="material-symbols-outlined">mood</span>
+</button>
+</div>
+<button class="w-11 h-11 bg-primary text-white rounded-full flex items-center justify-center shrink-0 hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/30 mb-1">
+<span class="material-symbols-outlined ml-1">send</span>
+</button>
+</div>
+</div>
+<script>
+        function openChat(name, role) {
+            const chatInterface = document.getElementById('chat-interface');
+            const chatName = document.getElementById('active-chat-name');
+            const chatRole = document.getElementById('active-chat-role');
+            
+            chatName.textContent = name;
+            chatRole.textContent = role + ' • Online';
+            
+            chatInterface.classList.remove('hidden');
+            chatInterface.classList.add('flex');
+            
+            // Re-trigger animations
+            const bubbles = chatInterface.querySelectorAll('.chat-bubble-in');
+            bubbles.forEach(bubble => {
+                bubble.style.animation = 'none';
+                bubble.offsetHeight; // trigger reflow
+                bubble.style.animation = null;
+            });
+
+            // Scroll to bottom
+            setTimeout(() => {
+                document.getElementById('chat-bottom').scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+
+        function closeChat() {
+            const chatInterface = document.getElementById('chat-interface');
+            chatInterface.classList.add('hidden');
+            chatInterface.classList.remove('flex');
+        }
+    </script>
+</body></html>

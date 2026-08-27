@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CLASSE - Report Cards</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#eaddff",
+                        "on-surface": "#1d1a24",
+                        "tertiary": "#4f4d59",
+                        "on-surface-variant": "#4a4455",
+                        "surface-container-high": "#ede5f4",
+                        "on-tertiary-fixed-variant": "#474551",
+                        "on-error": "#ffffff",
+                        "background": "#fef7ff",
+                        "on-primary-fixed": "#25005a",
+                        "secondary": "#b4136d",
+                        "danger": "#EF4444",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c9c4d3",
+                        "tertiary-fixed": "#e5e0ef",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-tertiary-container": "#e8e4f2",
+                        "warning": "#F59E0B",
+                        "on-secondary-fixed-variant": "#8c0053",
+                        "surface-container-low": "#f9f1ff",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#ccc3d8",
+                        "outline": "#7b7487",
+                        "secondary-fixed-dim": "#ffb0cd",
+                        "on-secondary-container": "#600037",
+                        "secondary-container": "#fd56a7",
+                        "primary": "#630ed4",
+                        "surface": "#FFFFFF",
+                        "inverse-on-surface": "#f6eefc",
+                        "inverse-primary": "#d2bbff",
+                        "text-secondary": "#64748B",
+                        "surface-container-highest": "#e8dfee",
+                        "on-primary-container": "#ede0ff",
+                        "surface-tint": "#732ee4",
+                        "success": "#10B981",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#fef7ff",
+                        "primary-container": "#7c3aed",
+                        "inverse-surface": "#332f39",
+                        "surface-variant": "#e8dfee",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-tertiary-fixed": "#1c1a25",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f3ebfa",
+                        "text-primary": "#1E293B",
+                        "tertiary-container": "#686572",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#dfd7e6",
+                        "on-secondary-fixed": "#3e0022",
+                        "on-background": "#1d1a24",
+                        "secondary-fixed": "#ffd9e4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "sm": "12px",
+                        "container-padding": "20px",
+                        "md": "16px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "display-hero": ["Inter"],
+                        "caption": ["Inter"],
+                        "heading-lg": ["Inter"],
+                        "heading-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-stats": ["Inter"],
+                        "body-base": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-hero": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "caption": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "heading-lg": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "heading-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-stats": ["30px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-base": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["14px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f3ebfa; } /* surface-container */
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 0.75rem; /* xl */
+            border: 1px solid rgba(196, 181, 253, 0.2); /* primary-300 approx */
+            box-shadow: 0px 10px 30px rgba(221, 214, 254, 0.4);
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base text-on-background min-h-screen flex">
+<!-- SideNavBar (from JSON) -->
+<nav class="bg-surface-container dark:bg-surface-dim h-screen w-64 fixed left-0 top-0 shadow-lg hidden md:flex flex-col h-full p-md z-40">
+<div class="flex items-center gap-3 mb-xl">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container font-bold">C</div>
+<div>
+<h1 class="font-heading-lg text-heading-lg font-bold text-primary">Admin Panel</h1>
+<p class="font-caption text-caption text-on-surface-variant">Global Overview</p>
+</div>
+</div>
+<div class="flex-1 space-y-2">
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors scale-102 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors scale-102 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<!-- Active State Logic for Classes -> Maps to Report Cards context -->
+<a class="flex items-center gap-3 p-3 rounded-lg text-primary font-bold border-r-4 border-primary bg-primary/10 hover:scale-105 transition-transform duration-200 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+<span class="font-label-sm text-label-sm">Classes</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors scale-102 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">calendar_view_day</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors scale-102 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-sm text-label-sm">Finance</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant hover:bg-primary-container/20 transition-colors scale-102 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</div>
+<button class="mt-auto w-full py-3 bg-primary text-on-primary rounded-lg font-label-sm text-label-sm hover:scale-105 transition-transform shadow-[0px_10px_30px_#DDD6FE66] hover:shadow-lg">
+            Generate QR
+        </button>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 p-lg">
+<!-- TopAppBar (from JSON context, adapted for internal page) -->
+<header class="bg-surface/70 dark:bg-surface-dim/70 backdrop-blur-xl shadow-[0px_10px_30px_#DDD6FE66] dark:shadow-none shadow-md docked full-width top-0 flex justify-between items-center px-lg py-md w-full sticky z-30 rounded-xl mb-lg">
+<h2 class="font-heading-md text-heading-md text-primary dark:text-primary-fixed-dim">Report Cards Management</h2>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<img alt="Administrator Profile" class="w-10 h-10 rounded-full object-cover border-2 border-primary/20" data-alt="A small circular avatar showing a professional, friendly school administrator with a bright light-mode aesthetic, set against a clean white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQrdfyngfLkEJPCeFUJp-CKVJ6CqYyhI1kotHqpZPP04d4YRBCjV4kAu_kvY-cpCu5wVprsWU3oPTRgB7LwG69yCX1Nv8GWBXKQ7sZUovfw6ddc2sxDa-TFIDhvJmA1OwTrT79ypDo3BIj_2i8U_zEOkdeuQTqsaDai1A3Auzy9UV4eYHSuaV36lU5cvq8J1FPGc53Z_N5LUv6o9T4o5fb3l86I8fAyM9Zj00zImGWxgFHD0EjrBk54Q"/>
+</div>
+</header>
+<!-- Filters & Bulk Actions -->
+<div class="glass-card p-lg mb-lg flex flex-col md:flex-row justify-between items-end gap-md">
+<div class="flex gap-4 w-full md:w-auto">
+<div class="flex flex-col relative w-48">
+<label class="font-caption text-caption text-primary absolute -top-2 left-2 bg-surface px-1 rounded-md z-10 shadow-sm">Class</label>
+<select class="form-select w-full bg-surface/50 border-primary-100 rounded-lg text-body-base text-on-surface focus:border-primary focus:ring-1 focus:ring-primary h-12 pt-3">
+<option>10th Grade A</option>
+<option>10th Grade B</option>
+<option>11th Grade Science</option>
+</select>
+</div>
+<div class="flex flex-col relative w-48">
+<label class="font-caption text-caption text-primary absolute -top-2 left-2 bg-surface px-1 rounded-md z-10 shadow-sm">Term</label>
+<select class="form-select w-full bg-surface/50 border-primary-100 rounded-lg text-body-base text-on-surface focus:border-primary focus:ring-1 focus:ring-primary h-12 pt-3">
+<option>Term 1</option>
+<option>Term 2</option>
+<option>Finals</option>
+</select>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface text-primary border border-primary/20 px-4 py-2 rounded-lg font-label-sm text-label-sm hover:bg-primary/5 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">download</span>
+                    Export Class Data
+                </button>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-lg font-label-sm text-label-sm hover:scale-105 transition-transform shadow-[0px_4px_14px_#DDD6FE] flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">print</span>
+                    Generate All PDFs
+                </button>
+</div>
+</div>
+<!-- Student Data Table -->
+<div class="glass-card overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-variant/50 border-b border-primary/10">
+<th class="p-md font-label-sm text-label-sm text-tertiary">Student</th>
+<th class="p-md font-label-sm text-label-sm text-tertiary text-center">Average</th>
+<th class="p-md font-label-sm text-label-sm text-tertiary text-center">Rank</th>
+<th class="p-md font-label-sm text-label-sm text-tertiary">Mention</th>
+<th class="p-md font-label-sm text-label-sm text-tertiary">Status</th>
+<th class="p-md font-label-sm text-label-sm text-tertiary text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-primary/5">
+<!-- Row 1 -->
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="p-md">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">JS</div>
+<div>
+<div class="font-body-base text-body-base font-semibold text-on-surface">John Smith</div>
+<div class="font-caption text-caption text-text-secondary">ID: 24-001</div>
+</div>
+</div>
+</td>
+<td class="p-md text-center font-heading-md text-heading-md text-primary">16.5</td>
+<td class="p-md text-center font-body-base text-body-base">2/30</td>
+<td class="p-md">
+<span class="bg-success/10 text-success px-3 py-1 rounded-full font-caption text-caption font-semibold">Très Bien</span>
+</td>
+<td class="p-md">
+<span class="bg-success/10 text-success px-2 py-1 rounded-md font-caption text-caption flex items-center w-fit gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Cleared
+                                </span>
+</td>
+<td class="p-md text-right">
+<button class="text-primary hover:text-primary-container p-2 rounded-full hover:bg-primary/10 transition-colors" title="Download PDF">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 (Payment Blocked) -->
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="p-md">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">ED</div>
+<div>
+<div class="font-body-base text-body-base font-semibold text-on-surface">Emma Davis</div>
+<div class="font-caption text-caption text-text-secondary">ID: 24-042</div>
+</div>
+</div>
+</td>
+<td class="p-md text-center font-heading-md text-heading-md text-primary">14.2</td>
+<td class="p-md text-center font-body-base text-body-base">12/30</td>
+<td class="p-md">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full font-caption text-caption font-semibold">Bien</span>
+</td>
+<td class="p-md">
+<div class="flex items-center gap-2">
+<span class="bg-danger/10 text-danger px-2 py-1 rounded-md font-caption text-caption flex items-center w-fit gap-1">
+<span class="material-symbols-outlined text-[14px]">block</span> Payment Pending
+                                    </span>
+</div>
+</td>
+<td class="p-md text-right">
+<div class="flex justify-end gap-2">
+<button class="text-danger hover:bg-danger/10 px-3 py-1 rounded-md font-caption text-caption border border-danger/30 transition-colors" title="Force Print Override">
+                                        Force Print
+                                    </button>
+<button class="text-surface-variant cursor-not-allowed p-2 rounded-full" disabled="" title="PDF Blocked">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="p-md">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">LM</div>
+<div>
+<div class="font-body-base text-body-base font-semibold text-on-surface">Lucas Miller</div>
+<div class="font-caption text-caption text-text-secondary">ID: 24-015</div>
+</div>
+</div>
+</td>
+<td class="p-md text-center font-heading-md text-heading-md text-primary">18.1</td>
+<td class="p-md text-center font-body-base text-body-base">1/30</td>
+<td class="p-md">
+<span class="bg-secondary/10 text-secondary px-3 py-1 rounded-full font-caption text-caption font-semibold">Excellent</span>
+</td>
+<td class="p-md">
+<span class="bg-success/10 text-success px-2 py-1 rounded-md font-caption text-caption flex items-center w-fit gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Cleared
+                                </span>
+</td>
+<td class="p-md text-right">
+<button class="text-primary hover:text-primary-container p-2 rounded-full hover:bg-primary/10 transition-colors" title="Download PDF">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md border-t border-primary/10 flex justify-between items-center text-text-secondary font-caption text-caption">
+<span>Showing 1 to 3 of 30 entries</span>
+<div class="flex gap-1">
+<button class="p-1 rounded bg-surface border border-primary/20 hover:bg-primary/5 text-primary"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="p-1 rounded bg-primary text-on-primary w-8 h-8 flex items-center justify-center">1</button>
+<button class="p-1 rounded bg-surface border border-primary/20 hover:bg-primary/5 text-primary w-8 h-8 flex items-center justify-center">2</button>
+<button class="p-1 rounded bg-surface border border-primary/20 hover:bg-primary/5 text-primary"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</div>
+</main>
+</body></html>
