@@ -1,32 +1,39 @@
 # CLASSE — La gestion scolaire avec style
 
-CLASSE est le package scolaire du monorepo. Son interface reprend la maquette Stitch fournie : sidebar lavande, topbar CLASSE, cartes glassmorphism, palette violette et typographie Inter. Les écrans sont unifiés dans une seule navigation et se réorganisent pour un usage mobile.
+CLASSE est désormais l’application principale du dépôt. Elle est construite avec React, TypeScript et Vite, avec une interface responsive orientée gestion scolaire. La navigation latérale est rétractée par défaut : le logo reste visible, les libellés sont accessibles par infobulle et un bouton permet de déployer la navigation. Aucune top bar permanente n’est rendue sur desktop.
 
-## Fonctionnalités opérationnelles
+## Fonctionnalités disponibles
 
-Le package propose une expérience interactive persistée dans le navigateur : dashboard adapté au rôle, recherche universelle, gestion des élèves et dossier unifié, ajout d’inscription avec code automatique, import avec étape d’analyse et détection des doublons, classes configurables, planning avec contrôle des conflits, appel avec présence/retard/absence/excusé, saisie des notes avec sauvegarde au blur, calcul des bulletins pondérés, classement et mentions, paiements partiels et rapprochement Mobile Money, messagerie, QR d’accès réel avec expiration de quinze minutes et révocation, paramètres de structure et rôles, licence séparée des finances de l’école, ainsi que l’indicateur de synchronisation.
+L’application propose une expérience interactive persistée dans le navigateur : dashboard par rôle, recherche universelle, gestion des élèves et dossier unifié, ajout d’inscription avec code automatique, import avec analyse et détection des doublons, classes configurables, planning avec détection de conflits, appel avec présence/retard/absence/excusé, saisie des notes, calcul des bulletins pondérés, classement et mentions, paiements partiels et rapprochement Mobile Money, messagerie, QR d’accès avec expiration de quinze minutes et révocation, paramètres de structure, rôles, licence séparée des finances et indicateur réseau.
 
-Les données de démonstration sont enregistrées dans `localStorage` sous des clés préfixées `classe-`. Cette stratégie permet de tester tous les flux sans compte ni secrets et simule l’expérience offline-first de la maquette. Lorsque les variables Firebase sont renseignées, `src/lib/firebase.ts` initialise l’application Firebase afin de préparer le raccordement Firestore/Auth/Storage ; les règles multi-écoles sont fournies dans `firebase/firestore.rules`.
+Les données de démonstration sont enregistrées dans `localStorage` sous les clés préfixées `classe-`. Cette stratégie permet de vérifier les parcours sans compte ni secret. Quand les six variables Firebase sont renseignées, `src/lib/firebase.ts` initialise Firebase Auth côté client et la session authentifiée est pilotée par `onAuthStateChanged`. Sans ces variables, la saisie manuelle indique clairement qu’elle fonctionne en mode local et ne transmet pas les identifiants.
 
-## Développement
+## Développement local
 
-Depuis la racine du monorepo :
+Depuis la racine du dépôt :
 
 ```bash
-pnpm --filter @workspace/zeno dev
+npm install
+npm run dev
 ```
 
 La validation de production se fait avec :
 
 ```bash
-pnpm --filter @workspace/zeno typecheck
-pnpm --filter @workspace/zeno build
+npm run typecheck
+npm run build
 ```
 
 ## Configuration Firebase
 
-Créer un fichier `.env.local` dans `artifacts/zeno` avec les variables `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID` et `VITE_FIREBASE_APP_ID`. La présence de ces variables active uniquement l’initialisation du client Firebase ; les fonctions de génération de custom token, de révocation des tokens et de calcul des bulletins restent à déployer côté Cloud Functions dans le projet Firebase de l’établissement.
+Créer un fichier `.env.local` à la racine avec `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID` et `VITE_FIREBASE_APP_ID`. Ces valeurs activent l’initialisation Firebase Auth côté navigateur ; elles ne remplacent pas les règles de sécurité serveur.
 
-## Limites explicites
+Les règles Firestore préparatoires sont dans `firebase/firestore.rules`. Les Cloud Functions de génération et de consommation de QR, d’attribution des rôles, d’audit et de calcul serveur des bulletins doivent encore être créées et déployées dans le projet Firebase de l’établissement avant une utilisation multi-utilisateur en production. Aucun secret Admin SDK ne doit être placé dans les variables `VITE_*`.
 
-Le package livré est la version web fonctionnelle de la maquette dans le dépôt existant. Il ne prétend pas avoir déployé un projet Firebase réel, un binaire Tauri ou un APK Expo sans identifiants de projet et certificats fournis. Les actions d’export et d’impression sont préparées dans l’interface pour être reliées au Storage et aux générateurs PDF du projet de déploiement.
+## Maquette et cahier des charges
+
+La maquette complète, ses fichiers HTML, ses captures d’écran, son design system et le cahier des charges sont archivés dans `docs/maquette-classe/`. Le compte-rendu du remplacement et la vérification de la navigation sont dans `docs/classe-root-verification.md` et `docs/qa-classe-navigation.md`.
+
+## Limites de déploiement
+
+Le projet est une version web fonctionnelle et vérifiée. La persistance locale fonctionne dans le navigateur, mais la synchronisation distante, les Cloud Functions, les certificats mobiles et les secrets de production doivent être configurés dans le projet Firebase de l’établissement avant l’ouverture à une école réelle.

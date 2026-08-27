@@ -10,7 +10,7 @@ import {
 import './styles.css';
 import { calculerMoyenne, calculerRang, determinerMention, formatMontant, type GradeInput } from './lib/calculs';
 import { getFirebaseStatus } from './lib/firebase';
-import { signInWithEmailAndPassword, type Auth } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from 'firebase/auth';
 
 type Role = 'directeur' | 'professeur' | 'secretaire' | 'comptable';
 type View = 'dashboard' | 'students' | 'student-detail' | 'staff' | 'classes' | 'timetable' | 'qr' | 'bulletins' | 'finance' | 'attendance' | 'grades' | 'messages' | 'settings';
@@ -157,7 +157,8 @@ function EntryScreen({ auth, onAuthenticated }: { auth: Auth | null; onAuthentic
 
 export default function App() {
   const [role, setRole] = useState<Role>(() => readStorage('classe-role', 'directeur'));
-  const [authenticated, setAuthenticated] = useState<boolean>(() => readStorage('classe-authenticated', false));
+  const [localAuthenticated, setLocalAuthenticated] = useState<boolean>(() => readStorage('classe-authenticated', false));
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [view, setView] = useState<View>('dashboard');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readStorage('classe-sidebar-collapsed', true));
@@ -175,10 +176,15 @@ export default function App() {
   const [globalSearch, setGlobalSearch] = useState('');
   const [syncState, setSyncState] = useState<'sync' | 'pending' | 'offline' | 'error'>('sync');
   const firebaseStatus = getFirebaseStatus();
+  const authenticated = firebaseStatus.configured ? Boolean(firebaseUser) : localAuthenticated;
 
   useEffect(() => localStorage.setItem('classe-role', JSON.stringify(role)), [role]);
   useEffect(() => localStorage.setItem('classe-sidebar-collapsed', JSON.stringify(sidebarCollapsed)), [sidebarCollapsed]);
-  useEffect(() => localStorage.setItem('classe-authenticated', JSON.stringify(authenticated)), [authenticated]);
+  useEffect(() => localStorage.setItem('classe-authenticated', JSON.stringify(localAuthenticated)), [localAuthenticated]);
+  useEffect(() => {
+    if (!firebaseStatus.auth) return;
+    return onAuthStateChanged(firebaseStatus.auth, setFirebaseUser);
+  }, [firebaseStatus.auth]);
   useEffect(() => localStorage.setItem('classe-students', JSON.stringify(students)), [students]);
   useEffect(() => localStorage.setItem('classe-staff', JSON.stringify(staff)), [staff]);
   useEffect(() => localStorage.setItem('classe-classes', JSON.stringify(classes)), [classes]);
@@ -207,6 +213,10 @@ export default function App() {
   const navigate = (nextView: View) => { setView(nextView); setMobileNavOpen(false); setGlobalSearch(''); };
   const notify = (message: string, tone: 'success' | 'error' | 'info' = 'success') => { setToast({ message, tone }); if (tone === 'success') setSyncState('sync'); };
   const changeRole = (nextRole: Role) => { setRole(nextRole); navigate('dashboard'); notify(`Espace ${roleLabels[nextRole]} ouvert.`, 'info'); };
+  const logout = async () => {
+    if (firebaseStatus.auth) await signOut(firebaseStatus.auth);
+    setLocalAuthenticated(false); setMobileNavOpen(false); setView('dashboard'); notify('Vous êtes déconnecté.', 'info');
+  };
   const openStudent = (studentId: string) => { setSelectedStudentId(studentId); navigate('student-detail'); };
   const addStudent = (input: Pick<Student, 'name' | 'className' | 'sexe' | 'birthDate' | 'section'>) => {
     const nextCode = `EL${String(students.length + 1).padStart(3, '0')}`;
@@ -228,11 +238,11 @@ export default function App() {
     ...classes.filter((item) => item.name.toLowerCase().includes(globalSearch.toLowerCase())).map((item) => ({ type: 'Classe', title: item.name, detail: `${item.students} élèves · ${item.titular}`, action: () => navigate('classes') })),
   ].slice(0, 8) : [];
 
-  if (!authenticated) return <EntryScreen auth={firebaseStatus.auth} onAuthenticated={(nextRole) => { setRole(nextRole); setView('dashboard'); setAuthenticated(true); }} />;
+  if (!authenticated) return <EntryScreen auth={firebaseStatus.auth} onAuthenticated={(nextRole) => { setRole(nextRole); setView('dashboard'); if (!firebaseStatus.configured) setLocalAuthenticated(true); }} />;
 
   return <div className="classe-app">
     <button className={`mobile-overlay ${mobileNavOpen ? 'is-open' : ''}`} onClick={() => setMobileNavOpen(false)} aria-label="Fermer la navigation" />
-    <Sidebar role={role} view={view} items={visibleNav} open={mobileNavOpen} collapsed={sidebarCollapsed} config={config} onNavigate={navigate} onClose={() => setMobileNavOpen(false)} onQR={() => navigate('qr')} onToggle={() => setSidebarCollapsed((value) => !value)} onRoleChange={changeRole} unreadMessages={unreadMessages} />
+    <Sidebar role={role} view={view} items={visibleNav} open={mobileNavOpen} collapsed={sidebarCollapsed} config={config} onNavigate={navigate} onClose={() => setMobileNavOpen(false)} onQR={() => navigate('qr')} onToggle={() => setSidebarCollapsed((value) => !value)} onRoleChange={changeRole} onSignOut={logout} unreadMessages={unreadMessages} />
     <main className={`main-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       <button className="mobile-menu standalone-menu" onClick={() => setMobileNavOpen(true)} aria-label="Ouvrir la navigation"><Menu size={21} /></button>
       <div className="sync-strip"><SyncBadge state={syncState} /><span className="firebase-hint">{firebaseStatus.configured ? 'Cloud Firestore connecté' : 'Mode démonstration sécurisé · données conservées sur cet appareil'}</span></div>
@@ -256,13 +266,13 @@ export default function App() {
   </div>;
 }
 
-function Sidebar({ role, view, items, open, collapsed, config, onNavigate, onClose, onQR, onToggle, onRoleChange, unreadMessages }: { role: Role; view: View; items: NavItem[]; open: boolean; collapsed: boolean; config: SchoolConfig; onNavigate: (view: View) => void; onClose: () => void; onQR: () => void; onToggle: () => void; onRoleChange: (role: Role) => void; unreadMessages: number }) {
+function Sidebar({ role, view, items, open, collapsed, config, onNavigate, onClose, onQR, onToggle, onRoleChange, onSignOut, unreadMessages }: { role: Role; view: View; items: NavItem[]; open: boolean; collapsed: boolean; config: SchoolConfig; onNavigate: (view: View) => void; onClose: () => void; onQR: () => void; onToggle: () => void; onRoleChange: (role: Role) => void; onSignOut: () => void; unreadMessages: number }) {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   return <aside className={`sidebar ${open ? 'is-open' : ''} ${collapsed ? 'collapsed' : ''}`}>
     <div className="brand-row"><div className="brand-logo">C</div><div className="brand-copy"><strong>CLASSE</strong><span>{roleLabels[role]}</span></div><button className="sidebar-toggle" onClick={onToggle} aria-label={collapsed ? 'Déployer la navigation' : 'Rétracter la navigation'}>{collapsed ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}</button><button className="sidebar-close" onClick={onClose} aria-label="Fermer"><X size={18} /></button></div>
     <div className="school-switcher"><div className="school-avatar"><Building2 size={16} /></div><div className="school-switcher-copy"><span>Établissement actif</span><strong>{config.year}</strong></div><ChevronRight className="school-chevron" size={16} /></div>
     <nav className="nav-list" aria-label="Navigation principale">{items.map((item) => <button key={item.id} title={item.label} aria-label={item.label} className={`nav-item ${view === item.id || (item.id === 'students' && view === 'student-detail') ? 'active' : ''}`} onClick={() => onNavigate(item.id)}><item.icon size={18} strokeWidth={view === item.id ? 2.2 : 1.8} /><span>{item.label}</span>{item.id === 'attendance' && <span className="nav-count">3</span>}</button>)}</nav>
-    <div className="sidebar-bottom"><button className="protected-link"><ShieldCheck size={16} /><span>Données protégées</span></button><button className="sidebar-qr" onClick={onQR}><QrCode size={17} /><span>Générer un QR</span></button><div className="user-menu-wrap"><button className="user-row" onClick={() => setRoleMenuOpen((open) => !open)} aria-label="Changer de rôle"><div className="avatar avatar-photo">{roleInitials[role]}</div><div className="user-copy"><strong>{roleNames[role]}</strong><span>{roleLabels[role]}</span></div><MoreHorizontal size={17} /></button>{roleMenuOpen && <div className="role-menu sidebar-role-menu">{(Object.keys(roleLabels) as Role[]).map((candidate) => <button key={candidate} className={candidate === role ? 'selected' : ''} onClick={() => { onRoleChange(candidate); setRoleMenuOpen(false); }}>{roleLabels[candidate]}<small>{roleNames[candidate]}</small></button>)}</div>}</div><button className="sidebar-notifications" onClick={() => onNavigate('messages')} aria-label="Ouvrir les notifications"><Bell size={16} />{unreadMessages > 0 && <span>{unreadMessages}</span>}</button></div>
+    <div className="sidebar-bottom"><button className="protected-link"><ShieldCheck size={16} /><span>Données protégées</span></button><button className="sidebar-qr" onClick={onQR}><QrCode size={17} /><span>Générer un QR</span></button><div className="user-menu-wrap"><button className="user-row" onClick={() => setRoleMenuOpen((open) => !open)} aria-label="Changer de rôle"><div className="avatar avatar-photo">{roleInitials[role]}</div><div className="user-copy"><strong>{roleNames[role]}</strong><span>{roleLabels[role]}</span></div><MoreHorizontal size={17} /></button>{roleMenuOpen && <div className="role-menu sidebar-role-menu">{(Object.keys(roleLabels) as Role[]).map((candidate) => <button key={candidate} className={candidate === role ? 'selected' : ''} onClick={() => { onRoleChange(candidate); setRoleMenuOpen(false); }}>{roleLabels[candidate]}<small>{roleNames[candidate]}</small></button>)}</div>}</div><button className="sidebar-notifications" onClick={() => onNavigate('messages')} aria-label="Ouvrir les notifications"><Bell size={16} />{unreadMessages > 0 && <span>{unreadMessages}</span>}</button><button className="sidebar-signout" onClick={onSignOut}><ArrowLeft size={15} /> <span>Se déconnecter</span></button></div>
   </aside>;
 }
 
