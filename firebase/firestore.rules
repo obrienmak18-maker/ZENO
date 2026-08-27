@@ -43,9 +43,11 @@ service cloud.firestore {
       }
 
       match /qr_tokens/{tokenId} {
-        allow read: if true;
-        allow create: if admin() && sameSchool(school);
-        allow update: if admin() && sameSchool(school);
+        allow get: if resource.data.status == 'pending' && resource.data.expiresAt > request.time;
+        allow list: if false;
+        allow create: if admin() && sameSchool(school) && request.resource.data.school_id == school;
+        allow update: if admin() && sameSchool(school) && request.resource.data.school_id == school;
+        allow delete: if admin() && sameSchool(school);
       }
 
       match /messages/{messageId} {
