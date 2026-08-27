@@ -1,6 +1,8 @@
 node_modules/
 dist/
 functions/lib/
+**/target/
+src-tauri/gen/
 .env
 .env.*
 !.env.example

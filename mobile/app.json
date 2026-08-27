@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "CLASSE",
+    "slug": "classe-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "classe",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": ["expo-router", ["expo-camera", { "cameraPermission": "CLASSE utilise la caméra pour scanner un QR Code d’accès." }]],
+    "ios": { "supportsTablet": true, "bundleIdentifier": "cd.classe.mobile" },
+    "android": { "package": "cd.classe.mobile", "permissions": ["CAMERA"] },
+    "web": { "bundler": "metro", "output": "static" }
+  }
+}

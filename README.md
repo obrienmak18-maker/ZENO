@@ -28,7 +28,7 @@ npm run build
 
 Créer un fichier `.env.local` à la racine avec `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID` et `VITE_FIREBASE_APP_ID`. Ces valeurs activent l’initialisation Firebase Auth côté navigateur ; elles ne remplacent pas les règles de sécurité serveur.
 
-Les règles Firestore préparatoires sont dans `firebase/firestore.rules`. Les Cloud Functions de génération et de consommation de QR, d’attribution des rôles, d’audit et de calcul serveur des bulletins doivent encore être créées et déployées dans le projet Firebase de l’établissement avant une utilisation multi-utilisateur en production. Aucun secret Admin SDK ne doit être placé dans les variables `VITE_*`.
+Les règles Firestore sont dans `firebase/firestore.rules`, le schéma est dans `firebase/schema.md` et les Cloud Functions sécurisées sont dans `functions/src/index.ts`. Elles doivent être déployées dans le projet Firebase de l’établissement avant une utilisation multi-utilisateur en production. Aucun secret Admin SDK ne doit être placé dans les variables `VITE_*`.
 
 ## Maquette et cahier des charges
 
@@ -36,4 +36,4 @@ La maquette complète, ses fichiers HTML, ses captures d’écran, son design sy
 
 ## Limites de déploiement
 
-Le projet est une version web fonctionnelle et vérifiée. La persistance locale fonctionne dans le navigateur, mais la synchronisation distante, les Cloud Functions, les certificats mobiles et les secrets de production doivent être configurés dans le projet Firebase de l’établissement avant l’ouverture à une école réelle.
+Le projet contient la cible Web, la cible mobile Expo/React Native dans `mobile/` et la cible desktop Tauri dans `src-tauri/`. Les validations Web, Expo web, Cloud Functions et Tauri Linux passent dans l’environnement de développement. La persistance locale fonctionne immédiatement ; la synchronisation distante, les comptes Firebase, les certificats Android/iOS/macOS/Windows et les variables de production doivent encore être renseignés dans le projet de l’établissement avant l’ouverture à une école réelle.

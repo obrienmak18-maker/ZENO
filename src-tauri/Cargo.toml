@@ -1,0 +1,23 @@
+[package]
+name = "classe"
+version = "1.0.0"
+description = "CLASSE — gestion scolaire"
+authors = ["CLASSE"]
+edition = "2021"
+
+[lib]
+name = "classe_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.4.1", features = [] }
+
+[dependencies]
+tauri = { version = "2.5.1", features = [] }
+tauri-plugin-opener = "2.2.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
