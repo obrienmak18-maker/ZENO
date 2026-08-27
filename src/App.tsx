@@ -160,6 +160,7 @@ export default function App() {
   const [authenticated, setAuthenticated] = useState<boolean>(() => readStorage('classe-authenticated', false));
   const [view, setView] = useState<View>('dashboard');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readStorage('classe-sidebar-collapsed', true));
   const [students, setStudents] = useState<Student[]>(() => readStorage('classe-students', initialStudents));
   const [staff, setStaff] = useState<Staff[]>(() => readStorage('classe-staff', initialStaff));
   const [classes, setClasses] = useState<ClassRoom[]>(() => readStorage('classe-classes', initialClasses));
@@ -176,6 +177,7 @@ export default function App() {
   const firebaseStatus = getFirebaseStatus();
 
   useEffect(() => localStorage.setItem('classe-role', JSON.stringify(role)), [role]);
+  useEffect(() => localStorage.setItem('classe-sidebar-collapsed', JSON.stringify(sidebarCollapsed)), [sidebarCollapsed]);
   useEffect(() => localStorage.setItem('classe-authenticated', JSON.stringify(authenticated)), [authenticated]);
   useEffect(() => localStorage.setItem('classe-students', JSON.stringify(students)), [students]);
   useEffect(() => localStorage.setItem('classe-staff', JSON.stringify(staff)), [staff]);
@@ -230,9 +232,9 @@ export default function App() {
 
   return <div className="classe-app">
     <button className={`mobile-overlay ${mobileNavOpen ? 'is-open' : ''}`} onClick={() => setMobileNavOpen(false)} aria-label="Fermer la navigation" />
-    <Sidebar role={role} view={view} items={visibleNav} open={mobileNavOpen} config={config} onNavigate={navigate} onClose={() => setMobileNavOpen(false)} onQR={() => navigate('qr')} />
-    <main className="main-shell">
-      <Topbar role={role} config={config} unreadMessages={unreadMessages} onMenu={() => setMobileNavOpen(true)} globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResults={searchResults} onRoleChange={changeRole} onMessages={() => navigate('messages')} />
+    <Sidebar role={role} view={view} items={visibleNav} open={mobileNavOpen} collapsed={sidebarCollapsed} config={config} onNavigate={navigate} onClose={() => setMobileNavOpen(false)} onQR={() => navigate('qr')} onToggle={() => setSidebarCollapsed((value) => !value)} onRoleChange={changeRole} unreadMessages={unreadMessages} />
+    <main className={`main-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+      <button className="mobile-menu standalone-menu" onClick={() => setMobileNavOpen(true)} aria-label="Ouvrir la navigation"><Menu size={21} /></button>
       <div className="sync-strip"><SyncBadge state={syncState} /><span className="firebase-hint">{firebaseStatus.configured ? 'Cloud Firestore connecté' : 'Mode démonstration sécurisé · données conservées sur cet appareil'}</span></div>
       <div className="page-wrap">
         {view === 'dashboard' && <Dashboard role={role} config={config} students={students} staff={staff} payments={payments} classes={classes} onNavigate={navigate} onNotify={notify} />}
@@ -254,12 +256,13 @@ export default function App() {
   </div>;
 }
 
-function Sidebar({ role, view, items, open, config, onNavigate, onClose, onQR }: { role: Role; view: View; items: NavItem[]; open: boolean; config: SchoolConfig; onNavigate: (view: View) => void; onClose: () => void; onQR: () => void }) {
-  return <aside className={`sidebar ${open ? 'is-open' : ''}`}>
-    <div className="brand-row"><div className="brand-logo">C</div><div><strong>CLASSE</strong><span>{roleLabels[role]}</span></div><button className="sidebar-close" onClick={onClose} aria-label="Fermer"><X size={18} /></button></div>
-    <div className="school-switcher"><div className="school-avatar"><Building2 size={16} /></div><div><span>Établissement actif</span><strong>{config.year}</strong></div><ChevronRight size={16} /></div>
-    <nav className="nav-list" aria-label="Navigation principale">{items.map((item) => <button key={item.id} className={`nav-item ${view === item.id || (item.id === 'students' && view === 'student-detail') ? 'active' : ''}`} onClick={() => onNavigate(item.id)}><item.icon size={18} strokeWidth={view === item.id ? 2.2 : 1.8} /><span>{item.label}</span>{item.id === 'attendance' && <span className="nav-count">3</span>}</button>)}</nav>
-    <div className="sidebar-bottom"><button className="protected-link"><ShieldCheck size={16} /> Données protégées</button><button className="sidebar-qr" onClick={onQR}><QrCode size={17} /> Générer un QR</button><div className="user-row"><div className="avatar avatar-photo">{roleInitials[role]}</div><div><strong>{roleNames[role]}</strong><span>{roleLabels[role]}</span></div><MoreHorizontal size={17} /></div></div>
+function Sidebar({ role, view, items, open, collapsed, config, onNavigate, onClose, onQR, onToggle, onRoleChange, unreadMessages }: { role: Role; view: View; items: NavItem[]; open: boolean; collapsed: boolean; config: SchoolConfig; onNavigate: (view: View) => void; onClose: () => void; onQR: () => void; onToggle: () => void; onRoleChange: (role: Role) => void; unreadMessages: number }) {
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  return <aside className={`sidebar ${open ? 'is-open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+    <div className="brand-row"><div className="brand-logo">C</div><div className="brand-copy"><strong>CLASSE</strong><span>{roleLabels[role]}</span></div><button className="sidebar-toggle" onClick={onToggle} aria-label={collapsed ? 'Déployer la navigation' : 'Rétracter la navigation'}>{collapsed ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}</button><button className="sidebar-close" onClick={onClose} aria-label="Fermer"><X size={18} /></button></div>
+    <div className="school-switcher"><div className="school-avatar"><Building2 size={16} /></div><div className="school-switcher-copy"><span>Établissement actif</span><strong>{config.year}</strong></div><ChevronRight className="school-chevron" size={16} /></div>
+    <nav className="nav-list" aria-label="Navigation principale">{items.map((item) => <button key={item.id} title={item.label} aria-label={item.label} className={`nav-item ${view === item.id || (item.id === 'students' && view === 'student-detail') ? 'active' : ''}`} onClick={() => onNavigate(item.id)}><item.icon size={18} strokeWidth={view === item.id ? 2.2 : 1.8} /><span>{item.label}</span>{item.id === 'attendance' && <span className="nav-count">3</span>}</button>)}</nav>
+    <div className="sidebar-bottom"><button className="protected-link"><ShieldCheck size={16} /><span>Données protégées</span></button><button className="sidebar-qr" onClick={onQR}><QrCode size={17} /><span>Générer un QR</span></button><div className="user-menu-wrap"><button className="user-row" onClick={() => setRoleMenuOpen((open) => !open)} aria-label="Changer de rôle"><div className="avatar avatar-photo">{roleInitials[role]}</div><div className="user-copy"><strong>{roleNames[role]}</strong><span>{roleLabels[role]}</span></div><MoreHorizontal size={17} /></button>{roleMenuOpen && <div className="role-menu sidebar-role-menu">{(Object.keys(roleLabels) as Role[]).map((candidate) => <button key={candidate} className={candidate === role ? 'selected' : ''} onClick={() => { onRoleChange(candidate); setRoleMenuOpen(false); }}>{roleLabels[candidate]}<small>{roleNames[candidate]}</small></button>)}</div>}</div><button className="sidebar-notifications" onClick={() => onNavigate('messages')} aria-label="Ouvrir les notifications"><Bell size={16} />{unreadMessages > 0 && <span>{unreadMessages}</span>}</button></div>
   </aside>;
 }
 
