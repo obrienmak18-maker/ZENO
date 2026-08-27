@@ -71,7 +71,9 @@ export const consumeQrToken = onCall(async (request) => {
 
 export const bootstrapSchool = onCall(async (request) => {
   const auth = requireAuth(request);
-  if (String(auth.token.bootstrap_key ?? '') !== String(request.data?.bootstrapKey ?? '')) throw new HttpsError('permission-denied', 'Clé d’amorçage invalide.');
+  const bootstrapKey = stringValue(request.data?.bootstrapKey, 'bootstrapKey');
+  const configuredKey = String(auth.token.bootstrap_key ?? '');
+  if (!configuredKey || bootstrapKey !== configuredKey) throw new HttpsError('permission-denied', 'Clé d’amorçage invalide.');
   const schoolId = stringValue(request.data?.schoolId, 'schoolId');
   const name = stringValue(request.data?.name, 'name');
   await db.doc(`ecoles/${schoolId}`).set({ name, active: true, createdAt: FieldValue.serverTimestamp(), createdBy: auth.uid }, { merge: true });
