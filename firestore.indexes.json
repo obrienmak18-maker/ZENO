@@ -2,8 +2,12 @@
   "indexes": [
     { "collectionGroup": "notes", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "trimester", "order": "ASCENDING" }] },
     { "collectionGroup": "qr_tokens", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "profileId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] },
-    { "collectionGroup": "presences", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "dateKey", "order": "ASCENDING" }, { "fieldPath": "classId", "order": "ASCENDING" }] },
-    { "collectionGroup": "paiements", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "DESCENDING" }] }
+    { "collectionGroup": "presences", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "dateKey", "order": "ASCENDING" }, { "fieldPath": "classeId", "order": "ASCENDING" }] },
+    { "collectionGroup": "paiements", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "datePaiement", "order": "DESCENDING" }] },
+    { "collectionGroup": "messages", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "destinataireId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "notifications", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "recipientId", "order": "ASCENDING" }, { "fieldPath": "read", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "inscriptions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "eleveId", "order": "ASCENDING" }, { "fieldPath": "anneeScolaireId", "order": "ASCENDING" }] },
+    { "collectionGroup": "absences_enseignants", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "profileId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "DESCENDING" }] }
   ],
   "fieldOverrides": []
 }

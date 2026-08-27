@@ -12,6 +12,7 @@ service cloud.firestore {
     function pedagogical() { return roleIs('RESPONSABLE_PEDAGOGIQUE') || admin(); }
     function staff() { return admin() || teacher() || secretary() || accountant() || pedagogical() || roleIs('SURVEILLANT'); }
     function hasScope(schoolId) { return exists(/databases/$(database)/documents/ecoles/$(schoolId)/affectations/$(request.auth.uid)); }
+    function assignmentAllows(schoolId) { return hasScope(schoolId) && request.resource.data.keys().hasAll(['classeId', 'matiereId']) && request.resource.data.classeId in get(/databases/$(database)/documents/ecoles/$(schoolId)/affectations/$(request.auth.uid)).data.classeIds && request.resource.data.matiereId in get(/databases/$(database)/documents/ecoles/$(schoolId)/affectations/$(request.auth.uid)).data.matiereIds; }
     function validCreate(schoolId) { return sameSchool(schoolId) && request.resource.data.school_id == schoolId; }
     function validUpdate(schoolId) { return sameSchool(schoolId) && resource.data.school_id == schoolId && request.resource.data.school_id == schoolId; }
 
@@ -53,7 +54,7 @@ service cloud.firestore {
 
       match /matieres/{subjectId} {
         allow read: if staff() && sameSchool(schoolId);
-        allow write: if admin() || pedagogical();
+        allow write: if (admin() || pedagogical()) && (request.resource.data.school_id == schoolId || resource.data.school_id == schoolId);
       }
 
       match /trimestres/{trimesterId} {
@@ -68,13 +69,13 @@ service cloud.firestore {
 
       match /presences/{attendanceId} {
         allow read: if staff() && sameSchool(schoolId);
-        allow create, update: if validCreate(schoolId) && (admin() || secretary() || roleIs('SURVEILLANT') || (teacher() && hasScope(schoolId)));
+        allow create, update: if validCreate(schoolId) && (admin() || secretary() || roleIs('SURVEILLANT') || (teacher() && assignmentAllows(schoolId)));
         allow delete: if admin() && sameSchool(schoolId);
       }
 
       match /notes/{gradeId} {
         allow read: if staff() && sameSchool(schoolId);
-        allow create, update: if validCreate(schoolId) && (admin() || pedagogical() || (teacher() && hasScope(schoolId)));
+        allow create, update: if validCreate(schoolId) && (admin() || pedagogical() || (teacher() && assignmentAllows(schoolId)));
         allow delete: if admin() || pedagogical();
       }
 
@@ -108,6 +109,44 @@ service cloud.firestore {
       match /audit_logs/{auditId} {
         allow read: if admin() && sameSchool(schoolId);
         allow write: if false;
+      }
+
+      match /inscriptions/{enrollmentId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow write: if (admin() || secretary()) && (request.resource.data.school_id == schoolId || resource.data.school_id == schoolId);
+      }
+
+      match /roles/{roleId} {
+        allow read: if admin() && sameSchool(schoolId);
+        allow write: if admin() && validCreate(schoolId);
+      }
+
+      match /documents/{documentId} {
+        allow read: if staff() && sameSchool(schoolId);
+        allow create, update: if (admin() || secretary()) && validCreate(schoolId);
+        allow delete: if admin() && sameSchool(schoolId);
+      }
+
+      match /device_tokens/{tokenId} {
+        allow read, delete: if sameSchool(schoolId) && resource.data.uid == request.auth.uid;
+        allow create, update: if sameSchool(schoolId) && request.resource.data.school_id == schoolId && request.resource.data.uid == request.auth.uid;
+      }
+
+      match /notifications/{notificationId} {
+        allow get, list: if sameSchool(schoolId) && resource.data.recipientId == request.auth.uid;
+        allow update: if sameSchool(schoolId) && resource.data.recipientId == request.auth.uid;
+        allow create, delete: if false;
+      }
+
+      match /absences_enseignants/{absenceId} {
+        allow read: if admin() && sameSchool(schoolId);
+        allow create, update: if (admin() || teacher()) && validCreate(schoolId);
+        allow delete: if admin() && sameSchool(schoolId);
+      }
+
+      match /licence/{licenseId} {
+        allow read: if sameSchool(schoolId);
+        allow write: if admin() && validCreate(schoolId);
       }
 
       match /{collection}/{document} {

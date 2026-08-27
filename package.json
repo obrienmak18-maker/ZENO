@@ -8,7 +8,7 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
-    "test": "turbo run test",
+    "test": "turbo run test && vitest run packages/shared/src/index.test.ts",
     "test:rules": "firebase emulators:exec --project classe-rules-test --only firestore \"vitest run firebase/tests/firestore.rules.test.ts\"",
     "firebase:build": "pnpm --dir firebase/functions build",
     "firebase:deploy": "firebase deploy --only firestore:rules,functions,hosting",

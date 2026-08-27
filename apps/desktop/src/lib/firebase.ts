@@ -33,3 +33,5 @@ if (configured) {
 export function getFirebaseStatus() {
   return { configured, app, auth, functions, db, storage };
 }
+
+export { app, auth, functions, db, storage };

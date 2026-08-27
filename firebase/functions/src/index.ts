@@ -3,7 +3,7 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 
@@ -232,3 +232,152 @@ export const recordPayment = onCall(async (request) => {
 });
 
 function accountantRole(role: string) { return role === 'COMPTABLE' || role === 'comptable'; }
+
+const allowedCapabilities = new Set(['students.read', 'students.write', 'attendance.read', 'attendance.write', 'grades.read', 'grades.write', 'bulletins.read', 'bulletins.write', 'payments.read', 'payments.write', 'documents.read', 'documents.write', 'messages.use', 'planning.read', 'planning.write']);
+
+export const upsertAssignment = onCall(async (request) => {
+  const auth = requireAdmin(request);
+  const input = request.data ?? {};
+  const profileId = stringValue(input.profileId, 'profileId');
+  const anneeScolaireId = stringValue(input.anneeScolaireId, 'anneeScolaireId');
+  const classeIds = arrayOfStrings(input.classeIds, 'classeIds');
+  const matiereIds = arrayOfStrings(input.matiereIds, 'matiereIds');
+  const creneauIds = arrayOfStrings(input.creneauIds ?? [], 'creneauIds');
+  const id = profileId;
+  await db.doc(schoolPath(auth.schoolId, 'affectations', id)).set({ id, profileId, school_id: auth.schoolId, anneeScolaireId, classeIds, matiereIds, creneauIds, titulaire: Boolean(input.titulaire), active: input.active !== false, updatedAt: FieldValue.serverTimestamp(), updatedBy: auth.uid }, { merge: true });
+  await audit(auth, 'upsert_assignment', 'affectations', id, { classeIds, matiereIds, anneeScolaireId });
+  return { ok: true, id };
+});
+
+export const upsertCustomRole = onCall(async (request) => {
+  const auth = requireAdmin(request);
+  const input = request.data ?? {};
+  const id = stringValue(input.id ?? input.nom, 'id').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  const nom = stringValue(input.nom, 'nom');
+  const capabilities = arrayOfStrings(input.capabilities, 'capabilities');
+  if (capabilities.some((capability) => !allowedCapabilities.has(capability))) throw new HttpsError('invalid-argument', 'Capacité non reconnue.');
+  await db.doc(schoolPath(auth.schoolId, 'roles', id)).set({ id, nom, description: String(input.description ?? ''), capabilities, active: input.active !== false, school_id: auth.schoolId, updatedAt: FieldValue.serverTimestamp(), updatedBy: auth.uid }, { merge: true });
+  await audit(auth, 'upsert_custom_role', 'roles', id, { capabilities });
+  return { ok: true, id };
+});
+
+export const transitionEnrollments = onCall(async (request) => {
+  const auth = requireAdmin(request);
+  const fromYearId = stringValue(request.data?.fromYearId, 'fromYearId');
+  const toYearId = stringValue(request.data?.toYearId, 'toYearId');
+  const rows = request.data?.rows;
+  if (!Array.isArray(rows) || rows.length === 0 || rows.length > 450) throw new HttpsError('invalid-argument', 'rows doit contenir entre 1 et 450 transitions.');
+  const batch = db.batch();
+  const ids = new Set<string>();
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') throw new HttpsError('invalid-argument', 'Transition invalide.');
+    const item = row as Data;
+    const eleveId = stringValue(item.eleveId, 'eleveId');
+    const classeId = stringValue(item.classeId, 'classeId');
+    const decision = stringValue(item.decision, 'decision');
+    if (!['PROMOTION', 'REDOUBLEMENT', 'TRANSFERT', 'RADIATION', 'AUTRE'].includes(decision)) throw new HttpsError('invalid-argument', 'Décision de transition invalide.');
+    const id = `${eleveId}_${toYearId}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (ids.has(id)) throw new HttpsError('invalid-argument', 'Deux transitions concernent la même inscription.');
+    ids.add(id);
+    batch.set(db.doc(schoolPath(auth.schoolId, 'inscriptions', id)), { id, eleveId, classeId: String(item.toClasseId ?? classeId), fromClasseId: classeId, anneeScolaireId: toYearId, previousYearId: fromYearId, decision, statut: decision === 'RADIATION' ? 'ABANDON' : 'ACTIF', school_id: auth.schoolId, confirmedBy: auth.uid, confirmedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
+  await batch.commit();
+  await audit(auth, 'transition_enrollments', 'inscriptions', toYearId, { fromYearId, count: rows.length });
+  return { ok: true, count: rows.length, toYearId };
+});
+
+export const sendMessage = onCall(async (request) => {
+  const auth = requireStaff(request);
+  const input = request.data ?? {};
+  const destinataireId = stringValue(input.destinataireId, 'destinataireId');
+  const contenu = stringValue(input.contenu, 'contenu');
+  if (contenu.length > 5000) throw new HttpsError('invalid-argument', 'Message trop long.');
+  const recipient = await db.doc(schoolPath(auth.schoolId, 'profiles', destinataireId)).get();
+  if (!recipient.exists || recipient.data()?.school_id !== auth.schoolId) throw new HttpsError('not-found', 'Destinataire introuvable dans cette école.');
+  const ref = db.collection(schoolPath(auth.schoolId, 'messages')).doc();
+  await ref.set({ id: ref.id, school_id: auth.schoolId, expediteurId: auth.uid, destinataireId, contenu, lu: false, createdAt: FieldValue.serverTimestamp() });
+  await db.collection(schoolPath(auth.schoolId, 'notifications')).add({ school_id: auth.schoolId, recipientId: destinataireId, kind: 'MESSAGE', title: 'Nouveau message', body: contenu.slice(0, 120), targetView: 'messages', read: false, createdAt: FieldValue.serverTimestamp() });
+  return { ok: true, id: ref.id };
+});
+
+export const markMessageRead = onCall(async (request) => {
+  const auth = requireStaff(request);
+  const messageId = stringValue(request.data?.messageId, 'messageId');
+  const ref = db.doc(schoolPath(auth.schoolId, 'messages', messageId));
+  const snapshot = await ref.get();
+  if (!snapshot.exists || snapshot.data()?.destinataireId !== auth.uid) throw new HttpsError('permission-denied', 'Message non autorisé.');
+  await ref.update({ lu: true, readAt: FieldValue.serverTimestamp() });
+  return { ok: true, id: messageId };
+});
+
+export const declareTeacherAbsence = onCall(async (request) => {
+  const auth = requireStaff(request);
+  if (!adminRoles.has(auth.role) && !['PROFESSEUR', 'professeur'].includes(auth.role)) throw new HttpsError('permission-denied', 'Absence non autorisée.');
+  const profileId = adminRoles.has(auth.role) ? stringValue(request.data?.profileId, 'profileId') : auth.uid;
+  const date = stringValue(request.data?.date, 'date');
+  const timetableEntryIds = arrayOfStrings(request.data?.timetableEntryIds ?? [], 'timetableEntryIds');
+  const ref = db.collection(schoolPath(auth.schoolId, 'absences_enseignants')).doc(`${profileId}_${date}`);
+  await ref.set({ id: ref.id, school_id: auth.schoolId, profileId, date, timetableEntryIds, reason: String(request.data?.reason ?? ''), status: 'DECLAREE', createdBy: auth.uid, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+  await db.collection(schoolPath(auth.schoolId, 'notifications')).add({ school_id: auth.schoolId, recipientId: auth.uid, kind: 'ABSENCE', title: 'Absence enseignant déclarée', body: `Absence du ${date}`, targetView: 'staff', read: false, createdAt: FieldValue.serverTimestamp() });
+  return { ok: true, id: ref.id };
+});
+
+export const upsertSchoolLicense = onCall(async (request) => {
+  const auth = requireAdmin(request);
+  const input = request.data ?? {};
+  const planId = stringValue(input.planId, 'planId');
+  const startsAt = stringValue(input.startsAt, 'startsAt');
+  const expiresAt = stringValue(input.expiresAt, 'expiresAt');
+  if (new Date(expiresAt).getTime() <= new Date(startsAt).getTime()) throw new HttpsError('invalid-argument', 'La date d’expiration doit suivre la date de début.');
+  const id = String(input.id ?? `${auth.schoolId}_${planId}`);
+  await db.doc(schoolPath(auth.schoolId, 'licence', id)).set({ id, school_id: auth.schoolId, planId, startsAt, expiresAt, status: 'ACTIVE', updatedBy: auth.uid, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  await audit(auth, 'upsert_license', 'licence', id, { planId, expiresAt });
+  return { ok: true, id };
+});
+
+function arrayOfStrings(value: unknown, field: string): string[] { if (!Array.isArray(value)) throw new HttpsError('invalid-argument', `Le champ ${field} doit être une liste.`); const values = value.map((item) => String(item).trim()).filter(Boolean); if (values.length !== value.length) throw new HttpsError('invalid-argument', `Le champ ${field} contient une valeur invalide.`); return values; }
+
+export const registerDeviceToken = onCall(async (request) => {
+  const auth = requireStaff(request);
+  const token = stringValue(request.data?.token, 'token');
+  if (token.length > 512) throw new HttpsError('invalid-argument', 'Token d’appareil invalide.');
+  const id = `${auth.uid}_${token.slice(-24)}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+  await db.doc(schoolPath(auth.schoolId, 'device_tokens', id)).set({ id, school_id: auth.schoolId, uid: auth.uid, token, platform: String(request.data?.platform ?? 'unknown'), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { ok: true, id };
+});
+
+export const registerDocumentMetadata = onCall(async (request) => {
+  const auth = requireStaff(request);
+  const input = request.data ?? {};
+  const storagePath = stringValue(input.storagePath, 'storagePath');
+  if (!storagePath.startsWith(`ecoles/${auth.schoolId}/`)) throw new HttpsError('permission-denied', 'Document hors périmètre de l’école.');
+  const ownerType = stringValue(input.ownerType, 'ownerType');
+  if (!['ECOLE', 'ELEVE', 'CLASSE', 'ANNEE'].includes(ownerType)) throw new HttpsError('invalid-argument', 'Type de document invalide.');
+  const ownerId = stringValue(input.ownerId, 'ownerId');
+  const ref = db.collection(schoolPath(auth.schoolId, 'documents')).doc();
+  await ref.set({ id: ref.id, school_id: auth.schoolId, ownerType, ownerId, anneeScolaireId: String(input.anneeScolaireId ?? ''), name: stringValue(input.name, 'name'), contentType: stringValue(input.contentType, 'contentType'), storagePath, size: Number(input.size ?? 0), uploadedBy: auth.uid, createdAt: FieldValue.serverTimestamp() });
+  await audit(auth, 'register_document', 'documents', ref.id, { ownerType, ownerId });
+  return { ok: true, id: ref.id };
+});
+
+export const notifyPaymentCreated = onDocumentCreated('ecoles/{schoolId}/paiements/{paymentId}', async (event) => {
+  const payment = event.data?.data() ?? {};
+  const schoolId = event.params.schoolId;
+  const profiles = await db.collection(schoolPath(schoolId, 'profiles')).where('role', 'in', ['ADMINISTRATEUR', 'DIRECTEUR', 'admin', 'directeur']).limit(50).get();
+  const batch = db.batch();
+  profiles.docs.forEach((profile) => { const ref = db.collection(schoolPath(schoolId, 'notifications')).doc(); batch.set(ref, { id: ref.id, school_id: schoolId, recipientId: profile.id, kind: 'PAIEMENT', title: 'Nouveau paiement enregistré', body: `${String(payment.amount ?? payment.montantPaye ?? '')} enregistré pour ${String(payment.studentId ?? payment.eleveId ?? 'un élève')}`, targetView: 'finance', read: false, createdAt: FieldValue.serverTimestamp() }); });
+  if (!profiles.empty) await batch.commit();
+});
+
+export const upsertSchoolConfig = onCall(async (request) => {
+  const auth = requireAdmin(request);
+  const input = request.data ?? {};
+  const allowed = ['name', 'form', 'legalStatus', 'address', 'phone', 'year', 'enabledLevels', 'gradingScale', 'rankingEnabled', 'reminderEnabled'];
+  const config: Data = { school_id: auth.schoolId, updatedBy: auth.uid, updatedAt: FieldValue.serverTimestamp() };
+  for (const key of allowed) if (input[key] !== undefined) config[key] = input[key];
+  if (config.name !== undefined) config.name = stringValue(config.name, 'name');
+  if (config.year !== undefined) config.year = stringValue(config.year, 'year');
+  await db.doc(schoolPath(auth.schoolId, 'config', 'active')).set(config, { merge: true });
+  await audit(auth, 'upsert_school_config', 'config', 'active');
+  return { ok: true, schoolId: auth.schoolId };
+});

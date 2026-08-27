@@ -25,3 +25,5 @@ export function isActiveQr(token: Pick<QrToken, 'statut' | 'expiresAt'>, now = D
 export function canAccessRole(role: UserRole, capability: string): boolean { const map: Record<UserRole, string[]> = { ADMINISTRATEUR: ['*'], PROFESSEUR: ['students.read', 'attendance.write', 'grades.write', 'messages.use'], COMPTABLE: ['students.read', 'payments.read', 'payments.write', 'messages.use'], SECRETAIRE: ['students.read', 'students.write', 'documents.write', 'messages.use'], SURVEILLANT: ['students.read', 'attendance.write', 'messages.use'], RESPONSABLE_PEDAGOGIQUE: ['students.read', 'grades.read', 'grades.write', 'messages.use'] }; return map[role]?.includes('*') || map[role]?.includes(capability) || false; }
 
 export * from './validators';
+
+export * from './domain';

@@ -11,3 +11,9 @@ src-tauri/gen/
 !.env.example
 .DS_Store
 *.log
+
+.turbo/
+**/.turbo/
+apps/mobile/dist/
+apps/mobile/.expo/
+packages/*/dist/

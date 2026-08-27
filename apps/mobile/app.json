@@ -7,9 +7,9 @@
     "scheme": "classe",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": ["expo-router", ["expo-camera", { "cameraPermission": "CLASSE utilise la caméra pour scanner un QR Code d’accès." }]],
+    "plugins": ["expo-router", "expo-notifications", ["expo-camera", { "cameraPermission": "CLASSE utilise la caméra pour scanner un QR Code d’accès." }]],
     "ios": { "supportsTablet": true, "bundleIdentifier": "cd.classe.mobile" },
-    "android": { "package": "cd.classe.mobile", "permissions": ["CAMERA"] },
+    "android": { "package": "cd.classe.mobile", "permissions": ["CAMERA", "POST_NOTIFICATIONS"] },
     "web": { "bundler": "metro", "output": "static" }
   }
 }

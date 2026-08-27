@@ -11,7 +11,7 @@ beforeAll(async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context.firestore().doc('ecoles/ecole-a/eleves/e1').set({ school_id: 'ecole-a', id: 'e1', nom: 'Élève A' });
     await context.firestore().doc('ecoles/ecole-b/eleves/e1').set({ school_id: 'ecole-b', id: 'e1', nom: 'Élève B' });
-    await context.firestore().doc('ecoles/ecole-a/affectations/prof-a').set({ school_id: 'ecole-a', profileId: 'prof-a', classeIds: ['c1'] });
+    await context.firestore().doc('ecoles/ecole-a/affectations/prof-a').set({ school_id: 'ecole-a', profileId: 'prof-a', classeIds: ['c1'], matiereIds: ['math'], active: true });
   });
 });
 
@@ -31,7 +31,12 @@ describe('règles Firestore CLASSE', () => {
 
   it('autorise une présence pour un professeur affecté', async () => {
     const teacher = testEnv.authenticatedContext('prof-a', { school_id: 'ecole-a', role: 'PROFESSEUR' });
-    await assertSucceeds(teacher.firestore().doc('ecoles/ecole-a/presences/attendance-2').set({ school_id: 'ecole-a', studentId: 'e1', status: 'present' }));
+    await assertSucceeds(teacher.firestore().doc('ecoles/ecole-a/presences/attendance-2').set({ school_id: 'ecole-a', studentId: 'e1', classeId: 'c1', matiereId: 'math', status: 'present' }));
+  });
+
+  it('refuse une classe ou matière hors affectation', async () => {
+    const teacher = testEnv.authenticatedContext('prof-a', { school_id: 'ecole-a', role: 'PROFESSEUR' });
+    await assertFails(teacher.firestore().doc('ecoles/ecole-a/presences/attendance-3').set({ school_id: 'ecole-a', studentId: 'e1', classeId: 'c2', matiereId: 'math', status: 'present' }));
   });
 
   it('empêche une élévation de périmètre par school_id', async () => {

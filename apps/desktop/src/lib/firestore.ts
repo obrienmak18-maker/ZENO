@@ -36,7 +36,31 @@ export async function writeAttendanceBatch(db: Firestore, schoolId: string, reco
   const batch = writeBatch(db);
   Object.entries(records).forEach(([studentId, record]) => {
     const id = String(record.id ?? `${record.creneauId ?? 'slot'}_${dateKey}_${studentId}`);
-    batch.set(doc(db, 'ecoles', schoolId, 'presences', id), { ...record, studentId, school_id: schoolId, createdAt: serverTimestamp() }, { merge: true });
+    batch.set(doc(db, 'ecoles', schoolId, 'presences', id), { ...record, studentId, dateKey, school_id: schoolId, updatedAt: serverTimestamp() }, { merge: true });
   });
   await batch.commit();
+}
+
+export async function writeMessage(db: Firestore, schoolId: string, message: Record<string, unknown>) {
+  const id = String(message.id ?? crypto.randomUUID());
+  await writeSchoolDocument(db, schoolId, 'messages', id, { ...message, id, school_id: schoolId, lu: false });
+}
+
+export async function writeAssignment(db: Firestore, schoolId: string, assignment: Record<string, unknown>) {
+  const id = String(assignment.id ?? assignment.profileId ?? crypto.randomUUID());
+  await writeSchoolDocument(db, schoolId, 'affectations', id, { ...assignment, id, school_id: schoolId, active: assignment.active !== false });
+}
+
+export async function writeEnrollment(db: Firestore, schoolId: string, enrollment: Record<string, unknown>) {
+  const id = String(enrollment.id ?? `${enrollment.eleveId ?? enrollment.studentId}_${enrollment.anneeScolaireId ?? enrollment.yearId}`);
+  await writeSchoolDocument(db, schoolId, 'inscriptions', id, { ...enrollment, id, school_id: schoolId });
+}
+
+export async function writeDocumentMetadata(db: Firestore, schoolId: string, document: Record<string, unknown>) {
+  const id = String(document.id ?? crypto.randomUUID());
+  await writeSchoolDocument(db, schoolId, 'documents', id, { ...document, id, school_id: schoolId });
+}
+
+export async function writeSchoolConfig(db: Firestore, schoolId: string, config: Record<string, unknown>) {
+  await writeSchoolDocument(db, schoolId, 'config', 'active', { ...config, school_id: schoolId });
 }
